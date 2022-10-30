@@ -1,0 +1,52 @@
+@font-face {
+    font-family: Pusab;
+    src: url("Pusab.otf") format("opentype");
+}
+
+:root {
+    --toastContainerTop: auto;
+    --toastContainerRight: auto;
+    --toastContainerBottom: 4rem;
+    --toastContainerLeft: calc(50vw - 8rem);
+}
+
+._toastContainer {
+    font-family: Cabin;
+    color: white;
+    font-size: 20px;
+    border-radius: 8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    overflow: hidden;
+}
+
+.invis_button {
+    outline: none;
+    border: none;
+    background-color: transparent;
+}
+.invis_button > * {
+    display: inline;
+}
+.wiggle_button {
+    transition: transform 0.35s cubic-bezier(0.47, 1.64, 0.41, 0.8);
+}
+.wiggle_button:enabled {
+    cursor: pointer;
+}
+.wiggle_button:enabled:active {
+    transform: scale(1.1);
+}
+
+*:focus-visible {
+    border-radius: 8px;
+    outline: 4px solid #00aeff !important;
+}
