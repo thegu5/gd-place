@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { toast, SvelteToast } from "@zerodevx/svelte-toast";
+
     import {
         canEdit,
         initUserData,
@@ -17,11 +19,11 @@
             cb: () => {
                 buttonsDisabled = true;
                 signInGoogle()
-                    .then(user => {
+                    .then((user) => {
                         loginPopupVisible = false;
                         buttonsDisabled = false;
                     })
-                    .catch(reason => {
+                    .catch((reason) => {
                         buttonsDisabled = false;
                     });
             },
@@ -43,6 +45,21 @@
         },
     ];
 
+    const toastSuccessTheme = {
+        theme: {
+            "--toastColor": "mintcream",
+            "--toastBackground": "rgba(72, 187, 120, 0.9)",
+            "--toastBarBackground": "#2F855A",
+        },
+    };
+    const toastErrorTheme = {
+        theme: {
+            "--toastColor": "mintcream",
+            "--toastBackground": "rgba(187, 72, 72, 0.9)",
+            "--toastBarBackground": "#852F2F",
+        },
+    };
+
     let loginPopupVisible = false;
 
     let buttonsDisabled = false;
@@ -50,6 +67,8 @@
     let usernameInput = "";
     $: validUsername = usernameInput.length > 0;
 </script>
+
+<SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
 <div class="all">
     {#if loadedUserData == null}
@@ -69,7 +88,18 @@
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                signOut();
+                signOut()
+                    .then(() => {
+                        toast.push(
+                            "Successfully logged out!",
+                            toastSuccessTheme
+                        );
+                    })
+                    .catch((err) => {
+                        console.error(err);
+
+                        toast.push("Failed to log out!", toastErrorTheme);
+                    });
             }}
         >
             <img
