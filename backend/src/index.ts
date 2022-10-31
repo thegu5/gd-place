@@ -1,13 +1,28 @@
 import * as dotenv from "dotenv";
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
+import { getAccountId } from "./gd";
+
+//const expressSvelte = require("express-svelte");
 
 dotenv.config();
 
-const PORT: number = parseInt(process.env.PORT || "8080", 10);
+// const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+//     const status = err.status || 500;
+//     const message =
+//         err.message || "Oops. Something went wrong. Please try again later!";
+//     res.status(status).send({
+//         status,
+//         message,
+//     });
+// };
+
+const PORT: number = parseInt(process.env.PORT || "8090", 10);
+const HOST: string | undefined =
+    process.env.PROD === "true" ? process.env.PROD_HOST : process.env.DEV_HOST;
 
 const app = express();
 
@@ -16,7 +31,7 @@ let currentCodes: number[] = [];
 const getNewUnusedCode = (): number => {
     const n = crypto.randomInt(0, 999999);
 
-    if (currentCodes.indexOf(n)) {
+    if (currentCodes.indexOf(n) !== -1) {
         return getNewUnusedCode();
     }
 
@@ -33,18 +48,49 @@ const getNewUnusedCode = (): number => {
 //     })
 // );
 
-var corsOptions = {
-    origin: "https://localhost",
-    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
-};
+// console.log(__dirname);
 
-app.use(helmet());
-app.use(cors(corsOptions));
+// // app.use("/public", express.static(PUBLIC));
+
+// app.use(
+//     expressSvelte({
+//         legacy: false,
+//         hydratable: true,
+//         viewsDirname: SVELTE,
+//         bundlesDirname: PUBLIC + "/dist",
+//         bundlesHost: "/public/dist",
+//         bundlesPattern: "[name][extname]",
+//         env: process.env.NODE_ENV,
+//     })
+// );
+// app.use(helmet());
+app.use(
+    cors({
+        origin: HOST,
+        optionsSuccessStatus: 200,
+    })
+);
 app.use(express.json());
 
-app.post("/gd/user", () => {});
+app.post("/gd/message/:user", async (req, _, __) => {
+    getAccountId(req.params.user)
+        .then(id => console.log(id))
+        .catch(err => console.log(err));
+    // res.send({ code: getNewUnusedCode() });
+});
 
-app.post("/gd/code", () => {});
+app.post("/gd/code", (_, res, __) => {});
+
+app.get("/:_*", (_, res, __) => {
+    res.redirect("/");
+});
+
+// app.get("/", (req, res, next) => {
+//     // @ts-ignore
+//     res.svelte("App.svelte");
+// });
+
+//app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);
