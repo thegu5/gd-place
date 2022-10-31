@@ -1,29 +1,22 @@
 <script lang="ts">
-    import {
-        canEdit,
-        initUserData,
-        setUserData,
-        signInGoogle,
-        signOut,
-        type UserData,
-    } from "../firebase/auth";
+    import { canEdit, initUserData, setUserData, signInGoogle, signOut, type UserData } from "../firebase/auth"
 
-    export let loadedUserData: UserData | null;
+    export let loadedUserData: UserData | null
 
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
             cb: () => {
-                buttonsDisabled = true;
+                buttonsDisabled = true
                 signInGoogle()
-                    .then(user => {
-                        loginPopupVisible = false;
-                        buttonsDisabled = false;
+                    .then((user) => {
+                        loginPopupVisible = false
+                        buttonsDisabled = false
                     })
-                    .catch(reason => {
-                        buttonsDisabled = false;
-                    });
+                    .catch((reason) => {
+                        buttonsDisabled = false
+                    })
             },
         },
         {
@@ -41,14 +34,14 @@
             name: "GD",
             cb: () => {},
         },
-    ];
+    ]
 
-    let loginPopupVisible = false;
+    let loginPopupVisible = false
 
-    let buttonsDisabled = false;
+    let buttonsDisabled = false
 
-    let usernameInput = "";
-    $: validUsername = usernameInput.length > 0;
+    let usernameInput = ""
+    $: validUsername = usernameInput.length > 0
 </script>
 
 <div class="all">
@@ -56,27 +49,19 @@
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                loginPopupVisible = true;
+                loginPopupVisible = true
             }}
         >
-            <img
-                draggable="false"
-                src="login/profile_in.png"
-                alt="login button"
-            />
+            <img draggable="false" src="login/profile_in.png" alt="login button" />
         </button>
     {:else}
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                signOut();
+                signOut()
             }}
         >
-            <img
-                draggable="false"
-                src="login/profile_out.png"
-                alt="logout button"
-            />
+            <img draggable="false" src="login/profile_out.png" alt="logout button" />
         </button>
         {#if loadedUserData.data != null && typeof loadedUserData.data != "string"}
             <div class="username_display">{loadedUserData.data.username}</div>
@@ -88,23 +73,15 @@
             <button
                 class="back_button invis_button wiggle_button blur_bg"
                 on:click={() => {
-                    loginPopupVisible = false;
+                    loginPopupVisible = false
                 }}
             >
                 <img draggable="false" src="login/back.svg" alt="back arrow" />
             </button>
             <div class="login_popup blur_bg">
                 {#each loginButtons as button}
-                    <button
-                        disabled={buttonsDisabled}
-                        class="login_method_button invis_button"
-                        on:click={button.cb}
-                    >
-                        <img
-                            draggable="false"
-                            src="login/{button.image}"
-                            alt="login provider"
-                        />
+                    <button disabled={buttonsDisabled} class="login_method_button invis_button" on:click={button.cb}>
+                        <img draggable="false" src="login/{button.image}" alt="login provider" />
                         Login with {button.name}
                     </button>
                 {/each}
@@ -116,28 +93,16 @@
         <div class="login_popup_container">
             {#if typeof loadedUserData.data != "string"}
                 <div class="username_form">
-                    Create your username: <input
-                        bind:value={usernameInput}
-                        class="username_input"
-                        type="text"
-                    />
+                    Create your username: <input bind:value={usernameInput} class="username_input" type="text" />
                     <button
                         disabled={!validUsername}
                         style:opacity={validUsername ? "1" : "0.25"}
                         class="checkmark_button invis_button wiggle_button"
                         on:click={() => {
-                            initUserData(
-                                loadedUserData.user.uid,
-                                usernameInput
-                            );
+                            initUserData(loadedUserData.user.uid, usernameInput)
                         }}
                     >
-                        <img
-                            draggable="false"
-                            src="login/check.png"
-                            alt="checkmark"
-                            width="50px"
-                        />
+                        <img draggable="false" src="login/check.png" alt="checkmark" width="50px" />
                     </button>
                 </div>
             {/if}
@@ -173,6 +138,7 @@
         color: white;
         text-align: right;
         text-shadow: 0 2px 6px #000d;
+        -webkit-text-stroke: 1px black;
     }
     .log_in_out_button > img {
         width: 75px;

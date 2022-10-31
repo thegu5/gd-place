@@ -1,16 +1,16 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount } from "svelte"
 
-    import { vec } from "../utils/vector";
-    import { DRAGGING_THRESHOLD, EditorApp } from "./app";
-    import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object";
-    import { EDIT_BUTTONS } from "./edit";
-    import { lazyLoad } from "../lazyLoad";
-    import { addObjectToLevel } from "../firebase/database";
-    import { canEdit, signInGoogle } from "../firebase/auth";
+    import { vec } from "../utils/vector"
+    import { DRAGGING_THRESHOLD, EditorApp } from "./app"
+    import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object"
+    import { EDIT_BUTTONS } from "./edit"
+    import { lazyLoad } from "../lazyLoad"
+    import { addObjectToLevel } from "../firebase/database"
+    import { canEdit, signInGoogle } from "../firebase/auth"
 
-    let pixiCanvas: HTMLCanvasElement;
-    let pixiApp: EditorApp;
+    let pixiCanvas: HTMLCanvasElement
+    let pixiApp: EditorApp
 
     enum EditorMenu {
         Build,
@@ -18,62 +18,75 @@
         Delete,
     }
 
-    let currentMenu = EditorMenu.Build;
-    let currentEditTab = 0;
+    let currentMenu = EditorMenu.Build
+    let currentEditTab = 0
     const switchMenu = (to: EditorMenu) => {
-        currentMenu = to;
+        currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
-            pixiApp.editorNode.removePreview();
-            pixiApp.editorNode.setObjectsSelectable(true);
+            pixiApp.editorNode.removePreview()
+            pixiApp.editorNode.setObjectsSelectable(true)
         } else {
-            pixiApp.editorNode.setObjectsSelectable(false);
-            pixiApp.editorNode.deselectObject();
+            pixiApp.editorNode.setObjectsSelectable(false)
+            pixiApp.editorNode.deselectObject()
         }
-    };
+    }
 
     onMount(() => {
-        pixiApp = new EditorApp(pixiCanvas);
-        switchMenu(EditorMenu.Build);
-    });
+        pixiApp = new EditorApp(pixiCanvas)
+        switchMenu(EditorMenu.Build)
+    })
 
-    let selectedObject = 1;
+    // just for testing
+    let last_delete = 0
+    let last_place = 0
 
-    const gradientFunc = t =>
-        `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`;
+    let delete_time = 0
+    let place_time = 0
+
+    const timer = 300
+
+    setInterval(() => {
+        const now = Date.now()
+        delete_time = Math.max(timer - Math.floor((now - last_delete) / 1000), 0)
+        place_time = Math.max(timer - Math.floor((now - last_place) / 1000), 0)
+    }, 1000)
+
+    let selectedObject = 1
+
+    const gradientFunc = (t) => `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`
 </script>
 
 <svelte:window
-    on:pointerup={e => {
-        pixiApp.dragging = null;
+    on:pointerup={(e) => {
+        pixiApp.dragging = null
     }}
-    on:pointermove={e => {
-        pixiApp.mousePos = vec(e.pageX, e.pageY);
+    on:pointermove={(e) => {
+        pixiApp.mousePos = vec(e.pageX, e.pageY)
         if (
             pixiApp.dragging &&
             !pixiApp.draggingThresholdReached &&
-            pixiApp.mousePos.distTo(pixiApp.dragging.prevMouse) >=
-                DRAGGING_THRESHOLD
+            pixiApp.mousePos.distTo(pixiApp.dragging.prevMouse) >= DRAGGING_THRESHOLD
         ) {
-            pixiApp.draggingThresholdReached = true;
-            pixiApp.dragging.prevMouse = vec(e.pageX, e.pageY);
+            pixiApp.draggingThresholdReached = true
+            pixiApp.dragging.prevMouse = vec(e.pageX, e.pageY)
         }
     }}
-    on:keydown={e => {
+    on:keydown={(e) => {
         if ($canEdit) {
             if (e.code == "Digit1") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Build);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Build)
+                return
             }
             if (e.code == "Digit2") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Edit);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Edit)
+                return
             }
             if (e.code == "Digit3") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Delete);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Delete)
+                return
             }
             for (let tab of EDIT_BUTTONS) {
                 for (let button of tab.buttons) {
@@ -82,13 +95,13 @@
                         e.shiftKey == button.shortcut?.shift &&
                         e.altKey == button.shortcut?.alt
                     ) {
-                        let obj = pixiApp.editorNode.objectPreview;
-                        e.preventDefault();
+                        let obj = pixiApp.editorNode.objectPreview
+                        e.preventDefault()
                         if (obj != null) {
-                            button.cb(obj);
-                            pixiApp.editorNode.updateObjectPreview();
+                            button.cb(obj)
+                            pixiApp.editorNode.updateObjectPreview()
                         }
-                        return;
+                        return
                     }
                 }
             }
@@ -100,53 +113,42 @@
     <canvas
         class="pixi_canvas"
         bind:this={pixiCanvas}
-        on:pointerdown={e => {
-            pixiApp.draggingThresholdReached = false;
+        on:pointerdown={(e) => {
+            pixiApp.draggingThresholdReached = false
             pixiApp.dragging = {
                 prevCamera: pixiApp.editorNode.cameraPos.clone(),
                 prevMouse: vec(e.pageX, e.pageY),
-            };
-        }}
-        on:wheel={e => {
-            e.preventDefault();
-            if (e.ctrlKey) {
-                let wm = pixiApp.editorNode.toWorld(
-                    pixiApp.mousePos,
-                    pixiApp.canvasSize()
-                );
-                let prevZoom = pixiApp.editorNode.zoom();
-                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1;
-                pixiApp.editorNode.zoomLevel = Math.min(
-                    24,
-                    Math.max(-6, pixiApp.editorNode.zoomLevel)
-                );
-                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom;
-                pixiApp.editorNode.cameraPos = wm.plus(
-                    pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-                );
-            } else if (e.shiftKey) {
-                pixiApp.editorNode.cameraPos.x += e.deltaY;
-                pixiApp.editorNode.cameraPos.y -= e.deltaX;
-            } else {
-                pixiApp.editorNode.cameraPos.y -= e.deltaY;
-                pixiApp.editorNode.cameraPos.x += e.deltaX;
             }
         }}
-        on:pointerup={e => {
-            pixiApp.mousePos = vec(e.pageX, e.pageY);
+        on:wheel={(e) => {
+            e.preventDefault()
+            if (e.ctrlKey) {
+                let wm = pixiApp.editorNode.toWorld(pixiApp.mousePos, pixiApp.canvasSize())
+                let prevZoom = pixiApp.editorNode.zoom()
+                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
+                pixiApp.editorNode.zoomLevel = Math.min(24, Math.max(-6, pixiApp.editorNode.zoomLevel))
+                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+                pixiApp.editorNode.cameraPos = wm.plus(pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio))
+            } else if (e.shiftKey) {
+                pixiApp.editorNode.cameraPos.x += e.deltaY
+                pixiApp.editorNode.cameraPos.y -= e.deltaX
+            } else {
+                pixiApp.editorNode.cameraPos.y -= e.deltaY
+                pixiApp.editorNode.cameraPos.x += e.deltaX
+            }
+        }}
+        on:pointerup={(e) => {
+            pixiApp.mousePos = vec(e.pageX, e.pageY)
             if (currentMenu == EditorMenu.Delete) {
-                return;
+                return
             }
             if ($canEdit) {
-                if (
-                    pixiApp.dragging == null ||
-                    !pixiApp.draggingThresholdReached
-                ) {
-                    const settings = getObjSettings(selectedObject);
+                if (pixiApp.dragging == null || !pixiApp.draggingThresholdReached) {
+                    const settings = getObjSettings(selectedObject)
                     let snapped = pixiApp.editorNode
                         .toWorld(pixiApp.mousePos, pixiApp.canvasSize())
                         .snapped(30)
-                        .plus(vec(15, 15));
+                        .plus(vec(15, 15))
                     pixiApp.editorNode.objectPreview = new GDObject(
                         selectedObject,
                         snapped.x + settings.offset_x,
@@ -155,8 +157,8 @@
                         false,
                         1.0,
                         50
-                    );
-                    pixiApp.editorNode.updateObjectPreview();
+                    )
+                    pixiApp.editorNode.updateObjectPreview()
                 }
             }
         }}
@@ -165,18 +167,16 @@
     <div class="playbutton">
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <img
-            src={pixiApp?.playingMusic
-                ? "gd/editor/GJ_stopEditorBtn_001.png"
-                : "gd/editor/GJ_playMusicBtn_001.png"}
+            src={pixiApp?.playingMusic ? "gd/editor/GJ_stopEditorBtn_001.png" : "gd/editor/GJ_playMusicBtn_001.png"}
             alt="play music"
             height="75"
             id="music_button"
             on:click={() => {
-                pixiApp.playingMusic = !pixiApp.playingMusic;
+                pixiApp.playingMusic = !pixiApp.playingMusic
                 if (pixiApp.playingMusic) {
-                    pixiApp.playMusic();
+                    pixiApp.playMusic()
                 } else {
-                    pixiApp.stopMusic();
+                    pixiApp.stopMusic()
                 }
             }}
         />
@@ -189,51 +189,30 @@
                     class="invis_button wiggle_button"
                     style:opacity={currentMenu == EditorMenu.Build ? 1 : 0.25}
                     on:click={() => {
-                        switchMenu(EditorMenu.Build);
+                        switchMenu(EditorMenu.Build)
                     }}
                 >
-                    <img
-                        draggable="false"
-                        src="gd/editor/side/build.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
-                    <div
-                        class="radial_timer"
-                        style:background={gradientFunc(0.5)}
-                    />
+                    <img draggable="false" src="gd/editor/side/build.svg" alt="" class="side_panel_button_icon" />
+                    <div class="radial_timer" style:background={gradientFunc(1 - place_time / timer)} />
                 </button>
                 <button
                     class="invis_button wiggle_button"
                     on:click={() => {
-                        switchMenu(EditorMenu.Edit);
+                        switchMenu(EditorMenu.Edit)
                     }}
                     style:opacity={currentMenu == EditorMenu.Edit ? 1 : 0.25}
                 >
-                    <img
-                        draggable="false"
-                        src="gd/editor/side/edit.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
+                    <img draggable="false" src="gd/editor/side/edit.svg" alt="" class="side_panel_button_icon" />
                 </button>
                 <button
                     class="invis_button wiggle_button"
                     style:opacity={currentMenu == EditorMenu.Delete ? 1 : 0.25}
                     on:click={() => {
-                        switchMenu(EditorMenu.Delete);
+                        switchMenu(EditorMenu.Delete)
                     }}
                 >
-                    <img
-                        draggable="false"
-                        src="gd/editor/side/delete.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
-                    <div
-                        class="radial_timer"
-                        style:background={gradientFunc(0.5)}
-                    />
+                    <img draggable="false" src="gd/editor/side/delete.svg" alt="" class="side_panel_button_icon" />
+                    <div class="radial_timer" style:background={gradientFunc(1 - delete_time / timer)} />
                 </button>
             </div>
 
@@ -243,12 +222,10 @@
                         {#each OBJECT_SETTINGS as objectData}
                             <button
                                 class="obj_button invis_button wiggle_button"
-                                id={selectedObject == objectData.id
-                                    ? "selected_obj_button"
-                                    : ""}
+                                id={selectedObject == objectData.id ? "selected_obj_button" : ""}
                                 on:click={() => {
-                                    console.log(objectData.id);
-                                    selectedObject = objectData.id;
+                                    console.log(objectData.id)
+                                    selectedObject = objectData.id
                                 }}
                             >
                                 <img
@@ -266,11 +243,9 @@
                             <button
                                 class="tab_button invis_button"
                                 on:click={() => {
-                                    currentEditTab = i;
+                                    currentEditTab = i
                                 }}
-                                style:opacity={currentEditTab == i
-                                    ? "1"
-                                    : "0.5"}
+                                style:opacity={currentEditTab == i ? "1" : "0.5"}
                             >
                                 {editTab.tabName}
                             </button>
@@ -280,24 +255,15 @@
                         {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
                             <button
                                 class="edit_button invis_button wiggle_button"
-                                style={pixiApp.editorNode.objectPreview ==
-                                    null ||
-                                (["cw_5", "ccw_5"].includes(
-                                    editButton["image"]
-                                ) &&
-                                    getObjSettings(
-                                        pixiApp.editorNode.objectPreview.id
-                                    ).solid)
+                                style={pixiApp.editorNode.objectPreview == null ||
+                                (["cw_5", "ccw_5"].includes(editButton["image"]) &&
+                                    getObjSettings(pixiApp.editorNode.objectPreview.id).solid)
                                     ? "opacity:0.3;"
                                     : ""}
                                 on:click={() => {
-                                    if (
-                                        pixiApp.editorNode.objectPreview != null
-                                    ) {
-                                        editButton.cb(
-                                            pixiApp.editorNode.objectPreview
-                                        );
-                                        pixiApp.editorNode.updateObjectPreview();
+                                    if (pixiApp.editorNode.objectPreview != null) {
+                                        editButton.cb(pixiApp.editorNode.objectPreview)
+                                        pixiApp.editorNode.updateObjectPreview()
                                     }
                                 }}
                             >
@@ -319,11 +285,14 @@
                                 {/if}
                             </button>
                         {/each}
+
+                        <!-- extra buttons -->
+                        {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
+                            <t class="edit_info_text"> Z={pixiApp.editorNode.objectPreview.zOrder} </t>
+                        {/if}
                     </div>
                 {:else}
-                    <div class="delete_menu">
-                        Select the object you want to delete!
-                    </div>
+                    <div class="delete_menu">Select the object you want to delete!</div>
                 {/if}
             </div>
 
@@ -332,27 +301,48 @@
                     class="place_button invis_button wiggle_button"
                     on:click={() => {
                         if (pixiApp.editorNode.objectPreview) {
-                            addObjectToLevel(pixiApp.editorNode.objectPreview);
-                            pixiApp.editorNode.removePreview();
+                            addObjectToLevel(pixiApp.editorNode.objectPreview)
+                            pixiApp.editorNode.removePreview()
+                            last_place = Date.now()
                         }
-                    }}>Place</button
+                    }}
                 >
+                    <div
+                        style="opacity: {place_time == 0 ? 1 : 0.5}; transform: scale({place_time == 0
+                            ? 1.0
+                            : 0.7});transition: ease-in-out 0.4s;"
+                    >
+                        Place
+                    </div>
+
+                    <div class="timer" style="font-size:{place_time == 0 ? 0 : '70px'};transition: ease-in-out 0.4s;">
+                        {Math.floor(place_time / 60)}:{place_time % 60}
+                    </div>
+                </button>
             {:else}
                 <button
                     class="delete_button invis_button wiggle_button"
                     on:click={() => {
-                        pixiApp.editorNode.deleteSelectedObject();
+                        pixiApp.editorNode.deleteSelectedObject()
+                        last_delete = Date.now()
                     }}
                 >
-                    <t style:opacity="0.5"> Delete </t>
-                    <div class="timer">00:69</div>
+                    <div
+                        style="opacity: {delete_time == 0 ? 1 : 0.5}; transform: scale({delete_time == 0
+                            ? 1.0
+                            : 0.7});transition: ease-in-out 0.4s;"
+                    >
+                        Delete
+                    </div>
+
+                    <div class="timer" style="font-size:{delete_time == 0 ? 0 : '70px'};transition: ease-in-out 0.4s;">
+                        {Math.floor(delete_time / 60)}:{delete_time % 60}
+                    </div>
                 </button>
             {/if}
         </div>
     {:else}
-        <div class="login_requirement_message">
-            You must be logged in to pisspoop GD Place tpoop!
-        </div>
+        <div class="login_requirement_message">You must be logged in to help build the level!</div>
     {/if}
 </div>
 
@@ -360,6 +350,7 @@
     :root {
         --menu-height: 300px;
         --font-small: 24px;
+        --font-medium: 32px;
         --font-large: 48px;
         --side-panel-icon-size: 56px;
         --icon-padding: 15px;
@@ -375,6 +366,7 @@
         :root {
             --menu-height: 220px;
             --font-small: 20px;
+            --font-medium: 30px;
             --font-large: 40px;
             --side-panel-icon-size: 38px;
             --timer-scale: 0.678571429;
@@ -387,6 +379,7 @@
         :root {
             --menu-height: 150px;
             --font-small: 18px;
+            --font-medium: 24px;
             --font-large: 32px;
             --side-panel-icon-size: 28px;
             --icon-padding: 5px;
@@ -510,13 +503,16 @@
         bottom: 0;
         right: 0;
         border-radius: 50%;
-        backdrop-filter: blur(12px);
+        /* backdrop-filter: blur(12px); */
         border: calc(var(--timer-scale) * 3.5px) solid white;
         background: conic-gradient(white 30deg, #000a 30deg 360deg);
     }
 
     .timer {
         opacity: 1;
+        font-size: var(--font-large);
+        --webkit-text-stroke: 2px black;
+        text-shadow: 0 0 4px black;
     }
 
     .buttons_panel {
@@ -553,6 +549,17 @@
         font-size: var(--font-small);
     }
 
+    .edit_info_text {
+        font-family: Pusab;
+        -webkit-text-stroke: 1.5px black;
+        color: white;
+        font-size: var(--font-medium);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
     .objects_grid {
         grid-area: container;
         width: 100%;
@@ -584,27 +591,37 @@
         height: 100%;
         background-color: #7ade2d;
         border-radius: 18px;
-        box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset,
-            4px 4px 0 8px #c6f249 inset, -4px -4px 0 8px #49851b inset;
+        box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset, 4px 4px 0 8px #c6f249 inset,
+            -4px -4px 0 8px #49851b inset;
         font-family: Pusab;
         color: white;
         font-size: var(--font-large);
         -webkit-text-stroke: 2.5px black;
         justify-self: end;
         grid-area: placev;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
     .delete_button {
         width: 300px;
         height: 100%;
         background-color: #de2d30;
         border-radius: 18px;
-        box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset,
-            4px 4px 0 8px #f24980 inset, -4px -4px 0 8px #851b1d inset;
+        box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset, 4px 4px 0 8px #f24980 inset,
+            -4px -4px 0 8px #851b1d inset;
         font-family: Pusab;
         color: white;
         font-size: var(--font-large);
         -webkit-text-stroke: 2.5px black;
         justify-self: end;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
     .obj_button {
         width: var(--grid-button-size);
