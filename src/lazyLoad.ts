@@ -4,7 +4,7 @@ const options = {
     threshold: 0,
 };
 
-export const lazyLoad = (image: HTMLImageElement, src) => {
+export const lazyLoad = (image: HTMLImageElement, src: string) => {
     image.style.backgroundColor = "#00000044";
     image.style.transition = "0.1s";
     image.style.borderRadius = "5px";
