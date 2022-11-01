@@ -72,14 +72,13 @@ app.use(
 );
 app.use(express.json());
 
-app.post("/gd/message/:user", async (req, _, __) => {
+app.post("/gd/message/:user", async (req, res, __) => {
     getAccountId(req.params.user)
-        .then(id => console.log(id))
-        .catch(err => console.log(err));
-    // res.send({ code: getNewUnusedCode() });
+        .then(uid => res.send({ uid, err: null }))
+        .catch(err => res.send({ uid: null, err }));
 });
 
-app.post("/gd/code", (_, res, __) => {});
+app.post("/gd/code", (_, res, __) => { });
 
 app.get("/:_*", (_, res, __) => {
     res.redirect("/");

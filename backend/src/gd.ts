@@ -1,4 +1,5 @@
-import fetch from "node-fetch";
+import fetch from "node-fetch"
+import FormData from "form-data";
 
 const BOOMLINGS = "https://www.boomlings.com/";
 const DATABASE = `${BOOMLINGS}/database`;
@@ -10,26 +11,38 @@ const ERRORS = {
     FAILED_USER: "Failed to get User ID",
 };
 
-type Result<T> = T | typeof ERRORS;
 
-const ACCOUNT_ID = new RegExp(":2:(d+)");
-const getAccountId = (username: string): Promise<Result<Number>> => {
+const fData = (data: { [key: string]: any }): FormData => {
+    let fd = new FormData();
+    Object.entries(data).forEach(([k, v]) => {
+        fd.append(k, v);
+    });
+    return fd;
+}
+
+
+const ACCOUNT_ID = new RegExp(/:2:(?<uid>\d+)/);
+const getAccountId = (username: string): Promise<number> => {
+    console.info(`User \`${username}\` requested user id.`);
+
     return new Promise((res, rej) => {
         fetch(`${DATABASE}/getGJUsers20.php`, {
             method: "POST",
-            body: JSON.stringify({
+            body: fData({
                 secret: GDSECRET,
                 str: username,
             }),
+            headers: {
+                "User-Agent": ""
+            }
         })
             .then(resp => {
                 resp.text()
                     .then(user => {
-                        console.log(user);
                         let matched = user.match(ACCOUNT_ID);
 
-                        if (matched && matched.length == 1) {
-                            res(parseInt(matched[0]));
+                        if (matched?.groups) {
+                            res(parseInt(matched?.groups["uid"]));
                         } else {
                             rej(ERRORS.FAILED_USER);
                         }
