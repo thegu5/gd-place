@@ -1,6 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from "firebase/app"
+import { getDatabase } from "firebase/database"
+import { getAuth } from "firebase/auth"
+
+import { getFunctions, httpsCallable } from "firebase/functions"
 
 const firebaseConfig = {
     apiKey: "AIzaSyAjDrDDgnLR6P5c8SANZhfe1v_NS8w_L2w",
@@ -11,8 +13,11 @@ const firebaseConfig = {
     messagingSenderId: "834241355775",
     appId: "1:834241355775:web:9fa08865bd618995b651ca",
     measurementId: "G-DREX7FG1NR",
-};
+}
 
-export const app = initializeApp(firebaseConfig);
-export const database = getDatabase(app);
-export const auth = getAuth(app);
+export const app = initializeApp(firebaseConfig)
+export const database = getDatabase(app)
+export const auth = getAuth(app)
+const functions = getFunctions(app)
+export const placeObject = httpsCallable(functions, "placeObject")
+export const deleteObject = httpsCallable(functions, "deleteObject")
