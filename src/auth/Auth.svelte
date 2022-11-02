@@ -1,31 +1,24 @@
 <script lang="ts">
-    import { toast, SvelteToast } from "@zerodevx/svelte-toast";
+    import { toast, SvelteToast } from "@zerodevx/svelte-toast"
 
-    import {
-        canEdit,
-        initUserData,
-        setUserData,
-        signInGoogle,
-        signOut,
-        type UserData,
-    } from "../firebase/auth";
+    import { canEdit, initUserData, signInGoogle, signOut, type UserData } from "../firebase/auth"
 
-    export let loadedUserData: UserData | null;
+    export let loadedUserData: UserData | null
 
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
             cb: () => {
-                buttonsDisabled = true;
+                buttonsDisabled = true
                 signInGoogle()
-                    .then(user => {
-                        loginPopupVisible = false;
-                        buttonsDisabled = false;
+                    .then((user) => {
+                        loginPopupVisible = false
+                        buttonsDisabled = false
                     })
-                    .catch(reason => {
-                        buttonsDisabled = false;
-                    });
+                    .catch((reason) => {
+                        buttonsDisabled = false
+                    })
             },
         },
         {
@@ -43,7 +36,7 @@
             name: "GD",
             cb: () => {},
         },
-    ];
+    ]
 
     const toastSuccessTheme = {
         theme: {
@@ -51,21 +44,21 @@
             "--toastBackground": "rgba(72, 187, 120, 0.9)",
             "--toastBarBackground": "#2F855A",
         },
-    };
+    }
     const toastErrorTheme = {
         theme: {
             "--toastColor": "mintcream",
             "--toastBackground": "rgba(187, 72, 72, 0.9)",
             "--toastBarBackground": "#852F2F",
         },
-    };
+    }
 
-    let loginPopupVisible = false;
+    let loginPopupVisible = false
 
-    let buttonsDisabled = false;
+    let buttonsDisabled = false
 
-    let usernameInput = "";
-    $: validUsername = usernameInput.length > 0;
+    let usernameInput = ""
+    $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,15}$/)
 </script>
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
@@ -75,14 +68,10 @@
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                loginPopupVisible = true;
+                loginPopupVisible = true
             }}
         >
-            <img
-                draggable="false"
-                src="login/profile_in.png"
-                alt="login button"
-            />
+            <img draggable="false" src="login/profile_in.png" alt="login button" />
         </button>
     {:else}
         <button
@@ -90,22 +79,15 @@
             on:click={() => {
                 signOut()
                     .then(() => {
-                        toast.push(
-                            "Successfully logged out!",
-                            toastSuccessTheme
-                        );
+                        toast.push("Successfully logged out!", toastSuccessTheme)
                     })
-                    .catch(err => {
-                        console.error(err);
-                        toast.push("Failed to log out!", toastErrorTheme);
-                    });
+                    .catch((err) => {
+                        console.error(err)
+                        toast.push("Failed to log out!", toastErrorTheme)
+                    })
             }}
         >
-            <img
-                draggable="false"
-                src="login/profile_out.png"
-                alt="logout button"
-            />
+            <img draggable="false" src="login/profile_out.png" alt="logout button" />
         </button>
         {#if loadedUserData.data != null && typeof loadedUserData.data != "string"}
             <div class="username_display">{loadedUserData.data.username}</div>
@@ -117,23 +99,15 @@
             <button
                 class="back_button invis_button wiggle_button blur_bg"
                 on:click={() => {
-                    loginPopupVisible = false;
+                    loginPopupVisible = false
                 }}
             >
                 <img draggable="false" src="login/back.svg" alt="back arrow" />
             </button>
             <div class="login_popup blur_bg">
                 {#each loginButtons as button}
-                    <button
-                        disabled={buttonsDisabled}
-                        class="login_method_button invis_button"
-                        on:click={button.cb}
-                    >
-                        <img
-                            draggable="false"
-                            src="login/{button.image}"
-                            alt="login provider"
-                        />
+                    <button disabled={buttonsDisabled} class="login_method_button invis_button" on:click={button.cb}>
+                        <img draggable="false" src="login/{button.image}" alt="login provider" />
                         Login with {button.name}
                     </button>
                 {/each}
@@ -145,28 +119,16 @@
         <div class="login_popup_container">
             {#if typeof loadedUserData.data != "string"}
                 <div class="username_form">
-                    Create your username: <input
-                        bind:value={usernameInput}
-                        class="username_input"
-                        type="text"
-                    />
+                    Create your username: <input bind:value={usernameInput} class="username_input" type="text" />
                     <button
                         disabled={!validUsername}
                         style:opacity={validUsername ? "1" : "0.25"}
                         class="checkmark_button invis_button wiggle_button"
                         on:click={() => {
-                            initUserData(
-                                loadedUserData.user.uid,
-                                usernameInput
-                            );
+                            initUserData(loadedUserData.user.uid, usernameInput)
                         }}
                     >
-                        <img
-                            draggable="false"
-                            src="login/check.png"
-                            alt="checkmark"
-                            width="50px"
-                        />
+                        <img draggable="false" src="login/check.png" alt="checkmark" width="50px" />
                     </button>
                 </div>
             {/if}

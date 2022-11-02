@@ -7,11 +7,11 @@
     import { EDIT_BUTTONS } from "./edit"
     import { lazyLoad } from "../lazyLoad"
     import { addObjectToLevel } from "../firebase/database"
-    import { canEdit, currentUserData, setUserData, signInGoogle } from "../firebase/auth"
+    import { canEdit, currentUserData, signInGoogle } from "../firebase/auth"
     import { SvelteToast, toast } from "@zerodevx/svelte-toast"
 
     let pixiCanvas: HTMLCanvasElement
-    let pixiApp: EditorApp
+    export let pixiApp: EditorApp
 
     enum EditorMenu {
         Build,
@@ -72,6 +72,11 @@
             }
         }
     })
+
+    // .updateVisibleChunks() on window resize
+    // window.addEventListener("resize", () => {
+    //     pixiApp.editorNode.updateVisibleChunks()
+    // })
 </script>
 
 <SvelteToast />
@@ -202,15 +207,6 @@
         />
     </div>
 
-    <button
-        class="playbutton"
-        on:click={() => {
-            setUserData(userUID, "lastPlaced", 0)
-        }}
-    >
-        CLICK HERE FOR FREE HACKS TIMER RESET!!
-    </button>
-
     {#if $canEdit}
         <div class="menu">
             <div class="side_panel menu_panel">
@@ -335,20 +331,17 @@
             {#if currentMenu != EditorMenu.Delete}
                 <button
                     class="place_button invis_button wiggle_button"
-                    disabled={placeTimeLeft > 0 && false}
+                    disabled={placeTimeLeft > 0}
                     on:click={() => {
-                        if (
-                            pixiApp.editorNode.objectPreview
-                            //&& placeTimeLeft == 0
-                        ) {
-                            addObjectToLevel(pixiApp.editorNode.objectPreview).catch((err) => {
-                                console.log(err)
-                                toast.push(err.message)
-                            })
-                            pixiApp.editorNode.removePreview()
-                            //lastPlaced = Date.now()
-                            updateTimeLeft()
-                            //setUserData(userUID, "lastPlaced", lastPlaced)
+                        if (pixiApp.editorNode.objectPreview && placeTimeLeft == 0) {
+                            addObjectToLevel(pixiApp.editorNode.objectPreview)
+                                .catch((err) => {
+                                    console.log(err)
+                                    toast.push(err.message)
+                                })
+                                .then(() => {
+                                    pixiApp.editorNode.removePreview()
+                                })
                         }
                     }}
                 >
@@ -372,15 +365,10 @@
             {:else}
                 <button
                     class="delete_button invis_button wiggle_button"
-                    disabled={deleteTimeLeft > 0 && false}
+                    disabled={deleteTimeLeft > 0}
                     on:click={() => {
-                        if (
+                        if (deleteTimeLeft == 0) {
                             pixiApp.editorNode.deleteSelectedObject()
-                            // && deleteTimeLeft == 0
-                        ) {
-                            //lastDeleted = Date.now()
-                            updateTimeLeft()
-                            //setUserData(userUID, "lastDeleted", lastDeleted)
                         }
                     }}
                 >

@@ -40,8 +40,16 @@ export const initChunkBehavior = (
             let chunkName = `${i},${j}`
 
             let chunk = new PIXI.Container()
+            chunk.visible = false
             chunk.name = chunkName
             worldNode.addChild(chunk)
+
+            // draw box
+            const chunkmarker = new PIXI.Graphics()
+            chunkmarker.lineStyle(1, 0xbb00bb, 1)
+            chunkmarker.drawRect(x, y, CHUNK_SIZE.x, CHUNK_SIZE.y)
+
+            chunk.addChild(chunkmarker)
 
             let selectableChunk = new PIXI.Container()
             selectableChunk.name = chunkName
