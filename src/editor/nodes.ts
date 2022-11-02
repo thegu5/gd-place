@@ -68,6 +68,9 @@ export class EditorNode extends PIXI.Container {
         }
 
         this.visibleChunks = chunks
+        this.visibleChunks.forEach((chunk) => {
+            (this.world.getChildByName(chunk) as ChunkNode).lastTimeVisible = Date.now();
+        })
         //console.log(chunks, startChunk, endChunk)
 
         const removed_chunks = new Set([...prev].filter((x) => !chunks.has(x)))
@@ -81,35 +84,31 @@ export class EditorNode extends PIXI.Container {
         added_chunks.forEach((chunk) => {
             // render this chunk
             this.world.getChildByName(chunk).visible = true;
-            (this.world.getChildByName(chunk) as ChunkNode).lastTimeVisible = Date.now();
+            if (!(this.world.getChildByName(chunk) as ChunkNode).loaded) {
+                (this.world.getChildByName(chunk) as ChunkNode).load()
+            }
         })
     }
 
     updateLoadedChunks() {
         let unloaded = 0;
-        let reloaded = 0;
+
         for (let x = LEVEL_BOUNDS.start.x; x <= LEVEL_BOUNDS.end.x; x += CHUNK_SIZE.x) {
             for (let y = LEVEL_BOUNDS.start.y; y <= LEVEL_BOUNDS.end.y; y += CHUNK_SIZE.y) {
                 const i = x / 20 / 30
                 const j = y / 20 / 30
                 const chunkName = `${i},${j}`
-                if (this.visibleChunks.has(chunkName)) {
-                    if (!(this.world.getChildByName(chunkName) as ChunkNode).loaded) {
-                        (this.world.getChildByName(chunkName) as ChunkNode).load()
-                        reloaded++;
-                    }
-                } else {
+                if (!this.visibleChunks.has(chunkName)) {
                     const timestamp = (this.world.getChildByName(chunkName) as ChunkNode).lastTimeVisible
                     if (Date.now() - timestamp > 1000 * 10 && (this.world.getChildByName(chunkName) as ChunkNode).loaded) {
                         (this.world.getChildByName(chunkName) as ChunkNode).unload()
                         unloaded++;
                     }
                 }
-
             }
         }
-        if (unloaded != 0 || reloaded != 0)
-            console.log(`Unloaded ${unloaded} chunks, reloaded ${reloaded} chunks`)
+        if (unloaded != 0)
+            console.log(`Unloaded ${unloaded} chunks`)
     }
 
     removePreview() {
@@ -231,6 +230,10 @@ export class EditorNode extends PIXI.Container {
         //     cock.addChild(sprite);
         // }
 
+        // setInterval(() => {
+        //     this.updateLoadedChunks()
+        // }, 1000)
+
         var stats = new Stats();
         //stats.showPanel(0);
         stats.showPanel(1);
@@ -243,7 +246,7 @@ export class EditorNode extends PIXI.Container {
 
             stats.begin();
 
-            //this.updateLoadedChunks()
+            
 
             this.cameraPos = this.cameraPos.clamped(LEVEL_BOUNDS.start, LEVEL_BOUNDS.end)
 
