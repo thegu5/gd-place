@@ -4,8 +4,10 @@ import { toast } from "@zerodevx/svelte-toast"
 
 import { vec, Vector } from "../utils/vector"
 import type { GDObject } from "./object"
-import { deleteObjectFromLevel, initChunkBehavior, CHUNK_SIZE } from "../firebase/database"
+import { deleteObjectFromLevel, initChunkBehavior, CHUNK_SIZE, ChunkNode } from "../firebase/database"
 import { clamp, wrap } from "../utils/math"
+
+import Stats from "stats.js";
 
 export const LEVEL_BOUNDS = {
     start: vec(0, 0),
@@ -78,8 +80,36 @@ export class EditorNode extends PIXI.Container {
 
         added_chunks.forEach((chunk) => {
             // render this chunk
-            this.world.getChildByName(chunk).visible = true
+            this.world.getChildByName(chunk).visible = true;
+            (this.world.getChildByName(chunk) as ChunkNode).lastTimeVisible = Date.now();
         })
+    }
+
+    updateLoadedChunks() {
+        let unloaded = 0;
+        let reloaded = 0;
+        for (let x = LEVEL_BOUNDS.start.x; x <= LEVEL_BOUNDS.end.x; x += CHUNK_SIZE.x) {
+            for (let y = LEVEL_BOUNDS.start.y; y <= LEVEL_BOUNDS.end.y; y += CHUNK_SIZE.y) {
+                const i = x / 20 / 30
+                const j = y / 20 / 30
+                const chunkName = `${i},${j}`
+                if (this.visibleChunks.has(chunkName)) {
+                    if (!(this.world.getChildByName(chunkName) as ChunkNode).loaded) {
+                        (this.world.getChildByName(chunkName) as ChunkNode).load()
+                        reloaded++;
+                    }
+                } else {
+                    const timestamp = (this.world.getChildByName(chunkName) as ChunkNode).lastTimeVisible
+                    if (Date.now() - timestamp > 1000 * 10 && (this.world.getChildByName(chunkName) as ChunkNode).loaded) {
+                        (this.world.getChildByName(chunkName) as ChunkNode).unload()
+                        unloaded++;
+                    }
+                }
+
+            }
+        }
+        if (unloaded != 0 || reloaded != 0)
+            console.log(`Unloaded ${unloaded} chunks, reloaded ${reloaded} chunks`)
     }
 
     removePreview() {
@@ -201,10 +231,19 @@ export class EditorNode extends PIXI.Container {
         //     cock.addChild(sprite);
         // }
 
+        var stats = new Stats();
+        //stats.showPanel(0);
+        stats.showPanel(1);
+        document.body.appendChild(stats.dom);
+
         app.ticker.add((delta) => {
             // let last = cock.getChildAt(cock.children.length - 1);
             // cock.removeChildAt(cock.children.length - 1);
             // cock.addChildAt(last, 0);
+
+            stats.begin();
+
+            //this.updateLoadedChunks()
 
             this.cameraPos = this.cameraPos.clamped(LEVEL_BOUNDS.start, LEVEL_BOUNDS.end)
 
@@ -255,6 +294,8 @@ export class EditorNode extends PIXI.Container {
                     height + 10
                 )
             }
+
+            stats.end();
         })
     }
 
@@ -331,3 +372,4 @@ export class ObjectSelectionRect extends PIXI.Sprite {
         this.rotation = objNode.rotation
     }
 }
+

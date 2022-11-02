@@ -8,6 +8,7 @@ import {
     type User,
     signOut as logOut,
     type UserCredential,
+    GithubAuthProvider,
 } from "firebase/auth"
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
@@ -17,21 +18,25 @@ import { auth, database } from "./init"
 let googleProvider = new GoogleAuthProvider()
 googleProvider.addScope("https://www.googleapis.com/auth/userinfo.profile")
 
+let githubProvider = new GithubAuthProvider()
+
 export type UserData = {
-    user: User
+    user: User,
     data:
-        | {
-              username: string
-              lastPlaced: number
-              lastDeleted: number
-          }
-        | null // no user data
-        | string // user data loading
+    | {
+        username: string
+        lastPlaced: number
+        lastDeleted: number
+    }
+    | null // no user data
+    | string // user data loading
 }
 
 export const currentUserData: Writable<UserData | null | string> = writable("loading")
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
+export const signInGithub = () => signInWithPopup(auth, githubProvider)
+
 export const signOut = () => logOut(auth)
 
 export const initUserData = (uid: string, username: string) => {

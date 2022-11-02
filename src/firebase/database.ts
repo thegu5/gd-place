@@ -35,102 +35,9 @@ export const initChunkBehavior = (
 ) => {
     for (let x = LEVEL_BOUNDS.start.x; x <= LEVEL_BOUNDS.end.x; x += CHUNK_SIZE.x) {
         for (let y = LEVEL_BOUNDS.start.y; y <= LEVEL_BOUNDS.end.y; y += CHUNK_SIZE.y) {
-            let i = x / 20 / 30
-            let j = y / 20 / 30
-            let chunkName = `${i},${j}`
+            const chunk = new ChunkNode(x, y, editorNode, selectableWorldNode, layerGroup, selectableLayerGroup)
 
-            let chunk = new PIXI.Container()
-            chunk.visible = false
-            chunk.name = chunkName
             worldNode.addChild(chunk)
-
-            // draw box
-            const chunkmarker = new PIXI.Graphics()
-            chunkmarker.lineStyle(1, 0xbb00bb, 1)
-            chunkmarker.drawRect(x, y, CHUNK_SIZE.x, CHUNK_SIZE.y)
-
-            chunk.addChild(chunkmarker)
-
-            let selectableChunk = new PIXI.Container()
-            selectableChunk.name = chunkName
-            selectableWorldNode.addChild(selectableChunk)
-
-            onChildAdded(ref(database, `chunks/${chunkName}`), (snapshot) => {
-                // console.log(snapshot.val());
-                let obj = GDObject.fromDatabaseString(snapshot.val())
-                let objectNode = new ObjectNode(obj, layerGroup)
-                objectNode.name = snapshot.key
-                chunk.addChild(objectNode)
-
-                let selectableSprite = new PIXI.Sprite(PIXI.Texture.EMPTY)
-                selectableSprite.name = snapshot.key
-                selectableSprite.anchor.set(0.5)
-                selectableSprite.alpha = 0.1
-                selectableSprite.renderable = false
-
-                selectableSprite.position = objectNode.position
-                selectableSprite.rotation = objectNode.rotation
-                selectableSprite.width = 40 * objectNode.scale.x
-                selectableSprite.height = 40 * objectNode.scale.y
-                selectableSprite.parentGroup = selectableLayerGroup
-
-                selectableChunk.addChild(selectableSprite)
-
-                selectableSprite.interactive = true
-
-                // selectableSprite.mouseover  = () => {
-                //     console.log("mouse over");
-                // };
-
-                selectableSprite.on("pointerup", () => {
-                    if (canEditValue) {
-                        editorNode.deselectObject()
-                        objectNode.sprite().tint = 0x00ff00
-                        const select_box = new PIXI.Graphics()
-                        select_box.name = "select_box"
-                        let [width, height] = [objectNode.sprite().width, objectNode.sprite().height]
-                        select_box.clear()
-                        select_box
-                            .lineStyle(1, 0xff3075, 1)
-                            .drawRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10)
-
-                        console.log(select_box, width, height)
-
-                        objectNode.addChild(select_box)
-
-                        editorNode.selectedObjectNode = objectNode
-                        selectableSprite.zOrder = editorNode.nextSelectionZ
-                        editorNode.nextSelectionZ -= 1
-                        editorNode.selectedObjectChunk = chunkName
-                    }
-                })
-            })
-
-            // onChildChanged(ref(database, `chunks/${chunkName}`), snapshot => {
-            //     let objectNode = chunk.getChildByName(
-            //         snapshot.key
-            //     ) as ObjectNode;
-            //     let selectableSprite = selectableChunk.getChildByName(
-            //         snapshot.key
-            //     ) as ObjectNode;
-            //     let obj = GDObject.fromDatabaseString(snapshot.val());
-            //     objectNode.update(obj);
-            //     objectNode.sprite().texture = PIXI.Texture.from(
-            //         `gd/objects/main/${obj.id}.png`
-            //     );
-            //     selectableSprite.position = objectNode.position;
-            //     selectableSprite.rotation = objectNode.rotation;
-            //     selectableSprite.width = 50 * objectNode.scale.x;
-            //     selectableSprite.height = 50 * objectNode.scale.y;
-            // });
-
-            onChildRemoved(ref(database, `chunks/${chunkName}`), (snapshot) => {
-                if (editorNode.selectedObjectChunk == chunkName && editorNode.selectedObjectNode.name == snapshot.key) {
-                    editorNode.deselectObject()
-                }
-                chunk.getChildByName(snapshot.key).destroy()
-                selectableChunk.getChildByName(snapshot.key).destroy()
-            })
         }
     }
 }
@@ -144,37 +51,109 @@ export const deleteObjectFromLevel = (objName: string, chunkName: string) => {
     return deleteObject({ objId: objName, chunkId: chunkName })
 }
 
-// let cocker = {};
-// for (let i = 0; i < 100; i += 5) {
-//     cocker[i] = `1;${15 + i};15;0;0;1`;
-// }
+export class ChunkNode extends PIXI.Container {
+    public unload = null;
+    public load = null;
 
-// set(ref(database, "/"), {
-//     chunks: {
-//         "0,0": {
-//             a: "1;15;15;0;0;4",
-//         },
-//     },
-// });
-// set(ref(database, "chunks/0,0/fgdgdfg4"), "1;45;15");
-// set(ref(database, "chunks/0,0/bv5fgn32"), "1;75;15");
-// set(ref(database, "cock"), { a: 5, b: 2 });
+    public addObject = null;
+    public removeObject = null;
 
-// onValue(ref(database, "cock"), snapshot => {
-//     console.log(
-//         snapshot.forEach(child => {
-//             console.log(child);
-//         })
-//     );
-// });
+    public lastTimeVisible: number = 0;
+    public loaded: boolean = false;
 
-// false && auth.uid !== null && newData.exists()
-//     ? now - root.child("userData").child(auth.uid).child("lastPlaced").val() >
-//       295
-//     : data.exists()
-//     ? now - root.child("userData").child(auth.uid).child("lastDeleted").val() >
-//       295
-//     : false;
+    constructor(
+        x: number,
+        y: number,
+        editorNode: EditorNode,
+        selectableWorldNode: PIXI.Container,
+        layerGroup: PIXI_LAYERS.Group,
+        selectableLayerGroup: PIXI_LAYERS.Group
+    ) {
+        super()
 
-// fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3
-// -NFbD3IO2hbsPa1ex-T_
+        let i = x / 20 / 30
+        let j = y / 20 / 30
+        let chunkName = `${i},${j}`
+        this.name = chunkName
+        this.visible = false
+
+        // draw box
+        const chunkmarker = new PIXI.Graphics()
+        chunkmarker.lineStyle(1, 0xbb00bb, 1)
+        chunkmarker.drawRect(x, y, CHUNK_SIZE.x, CHUNK_SIZE.y)
+
+        this.addChild(chunkmarker)
+
+        let selectableChunk = new PIXI.Container()
+        selectableChunk.name = chunkName
+        selectableWorldNode.addChild(selectableChunk)
+
+        this.addObject = (snapshot) => {
+            // console.log(snapshot.val());
+            let obj = GDObject.fromDatabaseString(snapshot.val())
+            let objectNode = new ObjectNode(obj, layerGroup)
+            objectNode.name = snapshot.key
+            this.addChild(objectNode)
+
+            let selectableSprite = new PIXI.Sprite(PIXI.Texture.EMPTY)
+            selectableSprite.name = snapshot.key
+            selectableSprite.anchor.set(0.5)
+            selectableSprite.alpha = 0.1
+            selectableSprite.renderable = false
+
+            selectableSprite.position = objectNode.position
+            selectableSprite.rotation = objectNode.rotation
+            selectableSprite.width = 40 * objectNode.scale.x
+            selectableSprite.height = 40 * objectNode.scale.y
+            selectableSprite.parentGroup = selectableLayerGroup
+
+            selectableChunk.addChild(selectableSprite)
+
+            selectableSprite.interactive = true
+
+            selectableSprite.on("pointerup", () => {
+                if (canEditValue) {
+                    editorNode.deselectObject()
+                    objectNode.sprite().tint = 0x00ff00
+                    const select_box = new PIXI.Graphics()
+                    select_box.name = "select_box"
+                    let [width, height] = [objectNode.sprite().width, objectNode.sprite().height]
+                    select_box.clear()
+                    select_box
+                        .lineStyle(1, 0xff3075, 1)
+                        .drawRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10)
+
+                    console.log(select_box, width, height)
+
+                    objectNode.addChild(select_box)
+
+                    editorNode.selectedObjectNode = objectNode
+                    selectableSprite.zOrder = editorNode.nextSelectionZ
+                    editorNode.nextSelectionZ -= 1
+                    editorNode.selectedObjectChunk = chunkName
+                }
+            })
+        }
+
+        this.removeObject = (snapshot) => {
+            if (editorNode.selectedObjectChunk == chunkName && editorNode.selectedObjectNode.name == snapshot.key) {
+                editorNode.deselectObject()
+            }
+            this.getChildByName(snapshot.key).destroy()
+            selectableChunk.getChildByName(snapshot.key).destroy()
+        }
+
+        this.load = () => {
+            const unsub1 = onChildAdded(ref(database, `chunks/${chunkName}`), this.addObject)
+            const unsub2 = onChildRemoved(ref(database, `chunks/${chunkName}`), this.removeObject)
+
+            this.loaded = true
+
+            this.unload = () => {
+                unsub1()
+                unsub2()
+                this.loaded = false
+            }
+        }
+    }
+}
