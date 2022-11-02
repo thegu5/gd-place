@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 
+export * from "./gd"
+
 // import { CHUNK_SIZE } from "../../../src/firebase/database"
 
 // import { GDObject } from "../../../src/editor/object"

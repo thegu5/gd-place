@@ -4,7 +4,7 @@ import { toast } from "@zerodevx/svelte-toast"
 
 import { vec, Vector } from "../utils/vector"
 import type { GDObject } from "./object"
-import { deleteObjectFromLevel, initChunkBehavior } from "../firebase/database"
+import { deleteObjectFromLevel, initChunkBehavior, CHUNK_SIZE } from "../firebase/database"
 import { clamp, wrap } from "../utils/math"
 
 export const LEVEL_BOUNDS = {
@@ -27,8 +27,60 @@ export class EditorNode extends PIXI.Container {
     public nextSelectionZ: number = -1
 
     public selectableWorld: PIXI.Container
-
     public groundTiling: PIXI.TilingSprite
+
+    public world: PIXI.Container
+
+    public visibleChunks: Set<string> = new Set()
+
+    updateVisibleChunks(app: PIXI.Application) {
+        const prev = this.visibleChunks
+
+        const worldScreenStart = this.toWorld(vec(0, 0), vec(app.screen.width, app.screen.height)).clamped(
+            LEVEL_BOUNDS.start,
+            LEVEL_BOUNDS.end
+        )
+        const worldScreenEnd = this.toWorld(
+            vec(app.screen.width, app.screen.height),
+            vec(app.screen.width, app.screen.height)
+        ).clamped(LEVEL_BOUNDS.start, LEVEL_BOUNDS.end)
+        const camRect = {
+            x: worldScreenStart.x,
+            y: worldScreenStart.y,
+            width: Math.abs(worldScreenEnd.x - worldScreenStart.x),
+            height: Math.abs(worldScreenEnd.y - worldScreenStart.y),
+        }
+        const startChunk = vec(Math.floor(camRect.x / CHUNK_SIZE.x), Math.floor(camRect.y / CHUNK_SIZE.y))
+        const endChunk = vec(
+            Math.floor((camRect.x + camRect.width) / CHUNK_SIZE.x),
+            Math.floor((camRect.y - camRect.height) / CHUNK_SIZE.y)
+        )
+        const chunksWidth = Math.abs(endChunk.x - startChunk.x) + 1
+        const chunksHeight = Math.abs(endChunk.y - startChunk.y) + 1
+        //console.log(camRect, startChunk, chunksWidth, chunksHeight)
+        let chunks = new Set<string>()
+        for (let x = 0; x < chunksWidth; x++) {
+            for (let y = 0; y < chunksHeight; y++) {
+                chunks.add(`${startChunk.x + x},${startChunk.y - y}`)
+            }
+        }
+
+        this.visibleChunks = chunks
+        //console.log(chunks, startChunk, endChunk)
+
+        const removed_chunks = new Set([...prev].filter((x) => !chunks.has(x)))
+        const added_chunks = new Set([...chunks].filter((x) => !prev.has(x)))
+
+        removed_chunks.forEach((chunk) => {
+            // dont render this chunk
+            this.world.getChildByName(chunk).visible = false
+        })
+
+        added_chunks.forEach((chunk) => {
+            // render this chunk
+            this.world.getChildByName(chunk).visible = true
+        })
+    }
 
     removePreview() {
         if (this.objectPreviewNode != null) {
@@ -102,9 +154,9 @@ export class EditorNode extends PIXI.Container {
         obama.scale.set(0.01)
         this.addChild(obama)
 
-        let world = new PIXI.Container()
-        this.addChild(world)
-        world.sortableChildren = true
+        this.world = new PIXI.Container()
+        this.addChild(this.world)
+        this.world.sortableChildren = true
 
         this.selectableWorld = new PIXI.Container()
         this.addChild(this.selectableWorld)
@@ -136,7 +188,8 @@ export class EditorNode extends PIXI.Container {
         groundLine.parentGroup = this.layerGroup
         groundLine.zOrder = 150
 
-        initChunkBehavior(this, world, this.selectableWorld, this.layerGroup, selectableLayerGroup)
+        initChunkBehavior(this, this.world, this.selectableWorld, this.layerGroup, selectableLayerGroup)
+        this.updateVisibleChunks(app)
 
         // for (let i = 0; i < 100; i++) {
         //     let sprite = new PIXI.Sprite(
@@ -155,9 +208,19 @@ export class EditorNode extends PIXI.Container {
 
             this.cameraPos = this.cameraPos.clamped(LEVEL_BOUNDS.start, LEVEL_BOUNDS.end)
 
+            const prev_values = [this.position.x, this.position.y, this.scale]
+
             this.position.x = -this.cameraPos.x * this.zoom()
             this.position.y = -this.cameraPos.y * this.zoom()
             this.scale.set(this.zoom())
+
+            if (
+                prev_values[0] != this.position.x ||
+                prev_values[1] != this.position.y ||
+                prev_values[2] != this.scale
+            ) {
+                this.updateVisibleChunks(app)
+            }
 
             groundLine.position.x = this.cameraPos.x
 
