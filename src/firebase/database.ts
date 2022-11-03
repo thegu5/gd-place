@@ -33,9 +33,24 @@ export const initChunkBehavior = (
     layerGroup: PIXI_LAYERS.Group,
     selectableLayerGroup: PIXI_LAYERS.Group
 ) => {
-    for (let x = LEVEL_BOUNDS.start.x; x <= LEVEL_BOUNDS.end.x; x += CHUNK_SIZE.x) {
-        for (let y = LEVEL_BOUNDS.start.y; y <= LEVEL_BOUNDS.end.y; y += CHUNK_SIZE.y) {
-            const chunk = new ChunkNode(x, y, editorNode, selectableWorldNode, layerGroup, selectableLayerGroup)
+    for (
+        let x = LEVEL_BOUNDS.start.x;
+        x <= LEVEL_BOUNDS.end.x;
+        x += CHUNK_SIZE.x
+    ) {
+        for (
+            let y = LEVEL_BOUNDS.start.y;
+            y <= LEVEL_BOUNDS.end.y;
+            y += CHUNK_SIZE.y
+        ) {
+            const chunk = new ChunkNode(
+                x,
+                y,
+                editorNode,
+                selectableWorldNode,
+                layerGroup,
+                selectableLayerGroup
+            )
 
             worldNode.addChild(chunk)
         }
@@ -52,16 +67,16 @@ export const deleteObjectFromLevel = (objName: string, chunkName: string) => {
 }
 
 export class ChunkNode extends PIXI.Container {
-    public unload = null;
-    public load = null;
+    public unload = null
+    public load = null
 
-    public addObject = null;
-    public removeObject = null;
+    public addObject = null
+    public removeObject = null
 
-    public lastTimeVisible: number = 0;
-    public loaded: boolean = false;
+    public lastTimeVisible: number = 0
+    public loaded: boolean = false
 
-    marker: PIXI.Graphics = null;
+    marker: PIXI.Graphics = null
 
     constructor(
         x: number,
@@ -119,11 +134,19 @@ export class ChunkNode extends PIXI.Container {
                     objectNode.sprite().tint = 0x00ff00
                     const select_box = new PIXI.Graphics()
                     select_box.name = "select_box"
-                    let [width, height] = [objectNode.sprite().width, objectNode.sprite().height]
+                    let [width, height] = [
+                        objectNode.sprite().width,
+                        objectNode.sprite().height,
+                    ]
                     select_box.clear()
                     select_box
                         .lineStyle(1, 0xff3075, 1)
-                        .drawRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10)
+                        .drawRect(
+                            -width / 2 - 5,
+                            -height / 2 - 5,
+                            width + 10,
+                            height + 10
+                        )
 
                     console.log(select_box, width, height)
 
@@ -138,7 +161,10 @@ export class ChunkNode extends PIXI.Container {
         }
 
         this.removeObject = (snapshot) => {
-            if (editorNode.selectedObjectChunk == chunkName && editorNode.selectedObjectNode.name == snapshot.key) {
+            if (
+                editorNode.selectedObjectChunk == chunkName &&
+                editorNode.selectedObjectNode.name == snapshot.key
+            ) {
                 editorNode.deselectObject()
             }
             this.getChildByName(snapshot.key).destroy()
@@ -146,8 +172,14 @@ export class ChunkNode extends PIXI.Container {
         }
 
         this.load = () => {
-            const unsub1 = onChildAdded(ref(database, `chunks/${chunkName}`), this.addObject)
-            const unsub2 = onChildRemoved(ref(database, `chunks/${chunkName}`), this.removeObject)
+            const unsub1 = onChildAdded(
+                ref(database, `chunks/${chunkName}`),
+                this.addObject
+            )
+            const unsub2 = onChildRemoved(
+                ref(database, `chunks/${chunkName}`),
+                this.removeObject
+            )
 
             this.loaded = true
             this.marker.tint = 0x00ff00

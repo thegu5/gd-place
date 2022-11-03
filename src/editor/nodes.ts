@@ -220,34 +220,7 @@ export class EditorNode extends PIXI.Container {
         initChunkBehavior(this, this.world, this.selectableWorld, this.layerGroup, selectableLayerGroup)
         this.updateVisibleChunks(app)
 
-        // for (let i = 0; i < 100; i++) {
-        //     let sprite = new PIXI.Sprite(
-        //         PIXI.Texture.from("gd/objects/main/1.png")
-        //     );
-        //     sprite.anchor.set(0.5);
-        //     sprite.position.x = i;
-        //     sprite.visible = false;
-        //     cock.addChild(sprite);
-        // }
-
-        // setInterval(() => {
-        //     this.updateLoadedChunks()
-        // }, 1000)
-
-        var stats = new Stats();
-        //stats.showPanel(0);
-        stats.showPanel(1);
-        document.body.appendChild(stats.dom);
-
         app.ticker.add((delta) => {
-            // let last = cock.getChildAt(cock.children.length - 1);
-            // cock.removeChildAt(cock.children.length - 1);
-            // cock.addChildAt(last, 0);
-
-            stats.begin();
-
-            
-
             this.cameraPos = this.cameraPos.clamped(LEVEL_BOUNDS.start, LEVEL_BOUNDS.end)
 
             const prev_values = [this.position.x, this.position.y, this.scale]
@@ -297,8 +270,6 @@ export class EditorNode extends PIXI.Container {
                     height + 10
                 )
             }
-
-            stats.end();
         })
     }
 

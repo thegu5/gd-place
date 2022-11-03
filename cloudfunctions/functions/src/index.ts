@@ -27,7 +27,10 @@ admin.initializeApp()
 export const placeObject = functions.https.onCall(async (data, request) => {
     // check that user is authenticated
     if (!request.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "User is not authenticated")
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "User is not authenticated"
+        )
     }
 
     // get user last timestamp /userData/$uid/lastPlaced
@@ -36,7 +39,10 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     const lastPlaced = (await lastPlacedRef.once("value")).val()
     const now = Date.now()
     if (lastPlaced && now - lastPlaced < 295000) {
-        throw new functions.https.HttpsError("resource-exhausted", "Object placed before cooldown")
+        throw new functions.https.HttpsError(
+            "resource-exhausted",
+            "Object placed before cooldown"
+        )
     }
 
     // reset timer
@@ -59,7 +65,10 @@ export const placeObject = functions.https.onCall(async (data, request) => {
 export const deleteObject = functions.https.onCall(async (data, request) => {
     // check that user is authenticated
     if (!request.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "User is not authenticated")
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "User is not authenticated"
+        )
     }
 
     // get user last timestamp /userData/$uid/lastDeleted
@@ -68,7 +77,10 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     const lastDeleted = (await lastDeletedRef.once("value")).val()
     const now = Date.now()
     if (lastDeleted && now - lastDeleted < 295000) {
-        throw new functions.https.HttpsError("resource-exhausted", "Object deleted before cooldown")
+        throw new functions.https.HttpsError(
+            "resource-exhausted",
+            "Object deleted before cooldown"
+        )
     }
 
     // reset timer

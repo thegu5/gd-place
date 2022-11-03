@@ -1,4 +1,4 @@
-import { vec } from "../utils/vector";
+import { vec } from "../utils/vector"
 
 export class GDObject {
     constructor(
@@ -15,7 +15,7 @@ export class GDObject {
     toDatabaseString() {
         return `${this.id};${this.x};${this.y};${this.rotation};${
             this.flip ? 1 : 0
-        };${this.scale};${this.zOrder}`;
+        };${this.scale};${this.zOrder}`
     }
 
     clone() {
@@ -27,11 +27,11 @@ export class GDObject {
             this.flip,
             this.scale,
             this.zOrder
-        );
+        )
     }
 
     static fromDatabaseString(s: string) {
-        let [id, x, y, rotation, flip, scale, zOrder] = s.split(";");
+        let [id, x, y, rotation, flip, scale, zOrder] = s.split(";")
         return new GDObject(
             // 🤣
             parseInt(id),
@@ -41,11 +41,11 @@ export class GDObject {
             flip == "1",
             parseFloat(scale),
             parseInt(zOrder)
-        );
+        )
     }
 
     settings() {
-        return getObjSettings(this.id);
+        return getObjSettings(this.id)
     }
 
     transform(
@@ -55,26 +55,26 @@ export class GDObject {
         offset: boolean
     ) {
         if (offset) {
-            let settings = this.settings();
+            let settings = this.settings()
             let offVec = vec(settings.offset_x, settings.offset_y).rotated(
                 -(this.rotation * Math.PI) / 180
-            );
-            this.x -= offVec.x;
-            this.y -= offVec.y;
-            offVec = offVec.rotated(-(angle * Math.PI) / 180);
-            offVec.x *= flipHoriz ? -1 : 1;
-            offVec.y *= flipVert ? -1 : 1;
-            this.x += offVec.x;
-            this.y += offVec.y;
+            )
+            this.x -= offVec.x
+            this.y -= offVec.y
+            offVec = offVec.rotated(-(angle * Math.PI) / 180)
+            offVec.x *= flipHoriz ? -1 : 1
+            offVec.y *= flipVert ? -1 : 1
+            this.x += offVec.x
+            this.y += offVec.y
         }
-        this.rotation += angle;
+        this.rotation += angle
         if (flipHoriz) {
-            this.flip = !this.flip;
-            this.rotation *= -1;
+            this.flip = !this.flip
+            this.rotation *= -1
         }
         if (flipVert) {
-            this.flip = !this.flip;
-            this.rotation = 180 - this.rotation;
+            this.flip = !this.flip
+            this.rotation = 180 - this.rotation
         }
     }
 }
@@ -348,11 +348,11 @@ export const OBJECT_SETTINGS = [
     { id: 53, offset_x: 0, offset_y: 0, solid: false },
     { id: 54, offset_x: 0, offset_y: 0, solid: false },
     { id: 60, offset_x: 0, offset_y: 0, solid: false },
-];
+]
 
-let idMapping = {};
+let idMapping = {}
 for (let i in OBJECT_SETTINGS) {
-    idMapping[OBJECT_SETTINGS[i].id] = i;
+    idMapping[OBJECT_SETTINGS[i].id] = i
 }
 
-export const getObjSettings = (id: number) => OBJECT_SETTINGS[idMapping[id]];
+export const getObjSettings = (id: number) => OBJECT_SETTINGS[idMapping[id]]

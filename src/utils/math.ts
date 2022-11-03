@@ -5,18 +5,18 @@ export const map_range = (
     c: number,
     d: number
 ) => {
-    let t = (x - a) / (b - a);
-    return c + (d - c) * t;
-};
+    let t = (x - a) / (b - a)
+    return c + (d - c) * t
+}
 
-export const snap = (x: number, grid: number) => Math.floor(x / grid) * grid;
+export const snap = (x: number, grid: number) => Math.floor(x / grid) * grid
 
 export const clamp = (x: number, min: number, max: number) =>
-    Math.min(max, Math.max(min, x));
+    Math.min(max, Math.max(min, x))
 export const clampAbs = (x: number, min: number, max: number) => {
-    return clamp(Math.abs(x), min, max) * Math.sign(x);
-};
+    return clamp(Math.abs(x), min, max) * Math.sign(x)
+}
 
 export const wrap = (x: number, min: number, max: number) => {
-    return x - Math.floor((x - min) / (max - min)) * (max - min);
-};
+    return x - Math.floor((x - min) / (max - min)) * (max - min)
+}

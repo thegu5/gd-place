@@ -21,18 +21,19 @@ googleProvider.addScope("https://www.googleapis.com/auth/userinfo.profile")
 let githubProvider = new GithubAuthProvider()
 
 export type UserData = {
-    user: User,
+    user: User
     data:
-    | {
-        username: string
-        lastPlaced: number
-        lastDeleted: number
-    }
-    | null // no user data
-    | string // user data loading
+        | {
+              username: string
+              lastPlaced: number
+              lastDeleted: number
+          }
+        | null // no user data
+        | string // user data loading
 }
 
-export const currentUserData: Writable<UserData | null | string> = writable("loading")
+export const currentUserData: Writable<UserData | null | string> =
+    writable("loading")
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
@@ -53,7 +54,11 @@ export const initUserData = (uid: string, username: string) => {
 
 export const canEdit = derived(
     currentUserData,
-    (value) => value != null && typeof value != "string" && value.data != null && typeof value.data != "string"
+    (value) =>
+        value != null &&
+        typeof value != "string" &&
+        value.data != null &&
+        typeof value.data != "string"
 )
 
 let userDataListener = null
@@ -70,10 +75,13 @@ onAuthStateChanged(auth, (user) => {
         if (userDataListener != null) {
             userDataListener()
         }
-        userDataListener = onValue(ref(database, `userData/${user.uid}`), (snapshot) => {
-            userDataValue.data = snapshot.val()
-            currentUserData.set(userDataValue)
-        })
+        userDataListener = onValue(
+            ref(database, `userData/${user.uid}`),
+            (snapshot) => {
+                userDataValue.data = snapshot.val()
+                currentUserData.set(userDataValue)
+            }
+        )
     } else {
         console.log("signed out")
         if (userDataListener != null) {

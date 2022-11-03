@@ -29,7 +29,11 @@ export class EditorApp {
     public music: any
 
     playMusic() {
-        let pos = Math.max(0, -this.canvas.offsetWidth / (2 * this.editorNode.zoom()) + this.editorNode.cameraPos.x)
+        let pos = Math.max(
+            0,
+            -this.canvas.offsetWidth / (2 * this.editorNode.zoom()) +
+                this.editorNode.cameraPos.x
+        )
         this.musicLine.position.x = pos
         const start_time = x_to_time(pos)
         this.music.seek(start_time)
@@ -52,7 +56,11 @@ export class EditorApp {
 
         app.stage = new PIXI_LAYERS.Stage()
 
-        let bgTiling = new PIXI.TilingSprite(PIXI.Texture.from("gd/world/background.png"), 2048 * 10, 2048)
+        let bgTiling = new PIXI.TilingSprite(
+            PIXI.Texture.from("gd/world/background.png"),
+            2048 * 10,
+            2048
+        )
         app.stage.addChild(bgTiling)
         bgTiling.tint = 0x287dff
 
@@ -90,14 +98,24 @@ export class EditorApp {
             center.position.y = app.screen.height / 2
 
             let bgOutside = 2048 - app.screen.height
-            bgTiling.y = map_range(this.editorNode.cameraPos.y, LEVEL_BOUNDS.start.y, LEVEL_BOUNDS.end.y, -bgOutside, 0)
+            bgTiling.y = map_range(
+                this.editorNode.cameraPos.y,
+                LEVEL_BOUNDS.start.y,
+                LEVEL_BOUNDS.end.y,
+                -bgOutside,
+                0
+            )
             bgTiling.x = -this.editorNode.cameraPos.x / 6.0
 
             if (this.dragging != null && this.draggingThresholdReached) {
                 this.editorNode.cameraPos.x =
-                    this.dragging.prevCamera.x - (this.mousePos.x - this.dragging.prevMouse.x) / this.editorNode.zoom()
+                    this.dragging.prevCamera.x -
+                    (this.mousePos.x - this.dragging.prevMouse.x) /
+                        this.editorNode.zoom()
                 this.editorNode.cameraPos.y =
-                    this.dragging.prevCamera.y + (this.mousePos.y - this.dragging.prevMouse.y) / this.editorNode.zoom()
+                    this.dragging.prevCamera.y +
+                    (this.mousePos.y - this.dragging.prevMouse.y) /
+                        this.editorNode.zoom()
             }
             let time
             if (this.playingMusic) {
@@ -126,5 +144,9 @@ export class EditorApp {
 }
 
 function rgbToHexnum([r, g, b]: number[]) {
-    return (Math.floor(r * 255) << 16) + (Math.floor(g * 255) << 8) + Math.floor(b * 255)
+    return (
+        (Math.floor(r * 255) << 16) +
+        (Math.floor(g * 255) << 8) +
+        Math.floor(b * 255)
+    )
 }

@@ -1,4 +1,4 @@
-import type { GDObject } from "./object";
+import type { GDObject } from "./object"
 
 export const EDIT_BUTTONS = [
     {
@@ -8,7 +8,7 @@ export const EDIT_BUTTONS = [
                 image: "left",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x -= 30;
+                    obj.x -= 30
                 },
                 shortcut: {
                     key: "a",
@@ -20,7 +20,7 @@ export const EDIT_BUTTONS = [
                 image: "up",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y += 30;
+                    obj.y += 30
                 },
                 shortcut: {
                     key: "w",
@@ -32,7 +32,7 @@ export const EDIT_BUTTONS = [
                 image: "right",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x += 30;
+                    obj.x += 30
                 },
                 shortcut: {
                     key: "d",
@@ -44,7 +44,7 @@ export const EDIT_BUTTONS = [
                 image: "down",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y -= 30;
+                    obj.y -= 30
                 },
                 shortcut: {
                     key: "s",
@@ -56,7 +56,7 @@ export const EDIT_BUTTONS = [
                 image: "left_small",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x -= 2;
+                    obj.x -= 2
                 },
                 shortcut: {
                     key: "a",
@@ -68,7 +68,7 @@ export const EDIT_BUTTONS = [
                 image: "up_small",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y += 2;
+                    obj.y += 2
                 },
                 shortcut: {
                     key: "w",
@@ -80,7 +80,7 @@ export const EDIT_BUTTONS = [
                 image: "right_small",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x += 2;
+                    obj.x += 2
                 },
                 shortcut: {
                     key: "d",
@@ -92,7 +92,7 @@ export const EDIT_BUTTONS = [
                 image: "down_small",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y -= 2;
+                    obj.y -= 2
                 },
                 shortcut: {
                     key: "s",
@@ -104,7 +104,7 @@ export const EDIT_BUTTONS = [
                 image: "left_big",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x -= 30 * 5;
+                    obj.x -= 30 * 5
                 },
                 shortcut: {
                     key: "a",
@@ -116,7 +116,7 @@ export const EDIT_BUTTONS = [
                 image: "up_big",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y += 30 * 5;
+                    obj.y += 30 * 5
                 },
                 shortcut: {
                     key: "w",
@@ -128,7 +128,7 @@ export const EDIT_BUTTONS = [
                 image: "right_big",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.x += 30 * 5;
+                    obj.x += 30 * 5
                 },
                 shortcut: {
                     key: "d",
@@ -140,7 +140,7 @@ export const EDIT_BUTTONS = [
                 image: "down_big",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.y -= 30 * 5;
+                    obj.y -= 30 * 5
                 },
                 shortcut: {
                     key: "s",
@@ -152,7 +152,7 @@ export const EDIT_BUTTONS = [
                 image: "flip_horiz",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(0, true, false, true);
+                    obj.transform(0, true, false, true)
                 },
                 shortcut: {
                     key: "q",
@@ -164,7 +164,7 @@ export const EDIT_BUTTONS = [
                 image: "flip_vert",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(0, false, true, true);
+                    obj.transform(0, false, true, true)
                 },
                 shortcut: {
                     key: "e",
@@ -176,7 +176,7 @@ export const EDIT_BUTTONS = [
                 image: "ccw",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(-90, false, false, true);
+                    obj.transform(-90, false, false, true)
                 },
                 shortcut: {
                     key: "q",
@@ -188,7 +188,7 @@ export const EDIT_BUTTONS = [
                 image: "cw",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(90, false, false, true);
+                    obj.transform(90, false, false, true)
                 },
                 shortcut: {
                     key: "e",
@@ -200,7 +200,7 @@ export const EDIT_BUTTONS = [
                 image: "ccw_5",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(-5, false, false, false);
+                    obj.transform(-5, false, false, false)
                 },
                 shortcut: {
                     key: "q",
@@ -212,7 +212,7 @@ export const EDIT_BUTTONS = [
                 image: "cw_5",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.transform(5, false, false, false);
+                    obj.transform(5, false, false, false)
                 },
                 shortcut: {
                     key: "e",
@@ -224,7 +224,7 @@ export const EDIT_BUTTONS = [
                 image: "scale_up",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.scale += 0.1;
+                    obj.scale += 0.1
                 },
                 shortcut: {
                     key: "e",
@@ -236,7 +236,7 @@ export const EDIT_BUTTONS = [
                 image: "scale_down",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.scale -= 0.1;
+                    obj.scale -= 0.1
                 },
                 shortcut: {
                     key: "q",
@@ -248,7 +248,7 @@ export const EDIT_BUTTONS = [
                 image: "left_small",
                 scale: 0.5,
                 cb: (obj: GDObject) => {
-                    obj.x -= 0.5;
+                    obj.x -= 0.5
                 },
                 shortcut: {
                     key: "a",
@@ -260,7 +260,7 @@ export const EDIT_BUTTONS = [
                 image: "up_small",
                 scale: 0.5,
                 cb: (obj: GDObject) => {
-                    obj.y += 0.5;
+                    obj.y += 0.5
                 },
                 shortcut: {
                     key: "w",
@@ -272,7 +272,7 @@ export const EDIT_BUTTONS = [
                 image: "right_small",
                 scale: 0.5,
                 cb: (obj: GDObject) => {
-                    obj.x += 0.5;
+                    obj.x += 0.5
                 },
                 shortcut: {
                     key: "d",
@@ -284,7 +284,7 @@ export const EDIT_BUTTONS = [
                 image: "down_small",
                 scale: 0.5,
                 cb: (obj: GDObject) => {
-                    obj.y -= 0.5;
+                    obj.y -= 0.5
                 },
                 shortcut: {
                     key: "s",
@@ -301,7 +301,7 @@ export const EDIT_BUTTONS = [
                 image: "z_plus",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.zOrder += 1;
+                    obj.zOrder += 1
                 },
                 shortcut: {
                     key: "z",
@@ -313,7 +313,7 @@ export const EDIT_BUTTONS = [
                 image: "z_minus",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.zOrder -= 1;
+                    obj.zOrder -= 1
                 },
                 shortcut: {
                     key: "z",
@@ -338,7 +338,7 @@ export const EDIT_BUTTONS = [
                 color: "#ff0000",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.colorChannel = 0;
+                    obj.colorChannel = 0
                 },
                 shortcut: null,
             },
@@ -347,10 +347,10 @@ export const EDIT_BUTTONS = [
                 color: "#00ff00",
                 scale: 1.0,
                 cb: (obj: GDObject) => {
-                    obj.colorChannel = 1;
+                    obj.colorChannel = 1
                 },
                 shortcut: null,
             },
         ],
     },
-];
+]

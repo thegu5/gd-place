@@ -25,7 +25,7 @@ const ERRORS = {
 interface Result<T, E> {
     data: T | null
     err: E | null
-    isErr: boolean,
+    isErr: boolean
 }
 
 const Ok = <T>(data: T): Result<T, any> => {
@@ -41,10 +41,10 @@ class Code {
     expirary: Date
 
     // expires after 5 minutes
-    static readonly EXP = 300;
+    static readonly EXP = 300
 
     private static getNewUnusedCode = (): number => {
-        return crypto.randomInt(0, 999999);
+        return crypto.randomInt(0, 999999)
     }
 
     hasExpired(): boolean {
@@ -52,12 +52,12 @@ class Code {
     }
 
     is(code: number): boolean {
-        return this.code === code;
+        return this.code === code
     }
 
     constructor() {
         this.code = Code.getNewUnusedCode()
-        this.expirary = new Date(Date.now() + Code.EXP);
+        this.expirary = new Date(Date.now() + Code.EXP)
     }
 }
 
@@ -66,8 +66,8 @@ class User {
     public code: Code
 
     constructor(uid: number) {
-        this.uid = uid;
-        this.code = new Code();
+        this.uid = uid
+        this.code = new Code()
     }
 }
 
@@ -141,8 +141,8 @@ const currentUsers: Map<number, User> = new Map()
 
 const sendMessageImpl = (uid: number): Promise<Result<null, string>> => {
     functions.logger.info(`Sending verification code to user: \`${uid}\`.`)
-    let user = new User(uid);
-    currentUsers.set(uid, user);
+    let user = new User(uid)
+    currentUsers.set(uid, user)
 
     return new Promise((res, rej) => {
         fetch(`${DATABASE}/uploadGJMessage20.php`, {
@@ -191,21 +191,21 @@ export const sendMessage = functions.https.onCall(async (data, request) => {
 })
 
 const verifyCodeImpl = (uid: number, code: number): Result<null, string> => {
-    let user = currentUsers.get(uid);
+    let user = currentUsers.get(uid)
 
     if (!user) {
-        return Err(ERRORS.FAILED_USER);
+        return Err(ERRORS.FAILED_USER)
     }
 
     if (user.code.hasExpired()) {
-        return Err(ERRORS.CODE_EXPIRED);
+        return Err(ERRORS.CODE_EXPIRED)
     }
 
     if (!user.code.is(code)) {
-        return Err(ERRORS.INVALID_CODE);
+        return Err(ERRORS.INVALID_CODE)
     }
 
-    currentUsers.delete(uid);
+    currentUsers.delete(uid)
 
     return Ok(null)
 }
