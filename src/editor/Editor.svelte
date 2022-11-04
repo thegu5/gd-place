@@ -7,7 +7,7 @@
     import { EDIT_BUTTONS } from "./edit"
     import { lazyLoad } from "../lazyLoad"
     import { addObjectToLevel } from "../firebase/database"
-    import { canEdit, currentUserData, signInGoogle } from "../firebase/auth"
+    import { canEdit, currentUserData } from "../firebase/auth"
     import { toast } from "@zerodevx/svelte-toast"
     import { toastErrorTheme } from "../const"
 

@@ -33,9 +33,11 @@ export const placeObject = functions.https.onCall(async (data, request) => {
         )
     }
 
+    const db = admin.database()
+
     // get user last timestamp /userData/$uid/lastPlaced
     const uid = request.auth.uid
-    const lastPlacedRef = admin.database().ref(`/userData/${uid}/lastPlaced`)
+    const lastPlacedRef = db.ref(`/userData/${uid}/lastPlaced`)
     const lastPlaced = (await lastPlacedRef.once("value")).val()
     const now = Date.now()
     if (lastPlaced && now - lastPlaced < 295000) {
@@ -44,9 +46,6 @@ export const placeObject = functions.https.onCall(async (data, request) => {
             "Object placed before cooldown"
         )
     }
-
-    // reset timer
-    await lastPlacedRef.set(now)
 
     functions.logger.log(`placeObject ${data}`)
 
@@ -57,9 +56,17 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let chunkX = Math.floor(parseFloat(props[1]) / CHUNK_SIZE.x)
     let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
 
-    const db = admin.database()
     const ref = db.ref(`/chunks/${chunkX},${chunkY}/`)
-    ref.push(object)
+    let key = await ref.push(object)
+
+    // reset timer
+    await lastPlacedRef.set(now)
+
+    db.ref(`/userData/${uid}/username`)
+        .get()
+        .then((username) => {
+            db.ref(`/userPlaced/${key.key}`).set(username.val())
+        })
 })
 
 export const deleteObject = functions.https.onCall(async (data, request) => {
@@ -71,9 +78,11 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
         )
     }
 
+    const db = admin.database()
+
     // get user last timestamp /userData/$uid/lastDeleted
     const uid = request.auth.uid
-    const lastDeletedRef = admin.database().ref(`/userData/${uid}/lastDeleted`)
+    const lastDeletedRef = db.ref(`/userData/${uid}/lastDeleted`)
     const lastDeleted = (await lastDeletedRef.once("value")).val()
     const now = Date.now()
     if (lastDeleted && now - lastDeleted < 295000) {
@@ -82,9 +91,6 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
             "Object deleted before cooldown"
         )
     }
-
-    // reset timer
-    await lastDeletedRef.set(now)
 
     functions.logger.log(`deleteobject ${data.chunkId} ${data.objId}`)
 
@@ -98,7 +104,11 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     //     throw new functions.https.HttpsError("invalid-argument", "Invalid objectId")
     // }
 
-    const db = admin.database()
     const ref = db.ref(`/chunks/${data.chunkId}/${data.objId}`)
     ref.remove()
+
+    // reset timer
+    await lastDeletedRef.set(now)
+
+    db.ref(`/userPlaced/${data.objId}`).remove()
 })

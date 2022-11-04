@@ -110,6 +110,7 @@ export class ChunkNode extends PIXI.Container {
             let obj = GDObject.fromDatabaseString(snapshot.val())
             let objectNode = new ObjectNode(obj, layerGroup)
             objectNode.name = snapshot.key
+
             this.addChild(objectNode)
 
             let selectableSprite = new PIXI.Sprite(PIXI.Texture.EMPTY)

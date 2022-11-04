@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js"
 import * as PIXI_LAYERS from "@pixi/layers"
 import { toast } from "@zerodevx/svelte-toast"
+import { get, ref } from "@firebase/database"
 
 import { vec, Vector } from "../utils/vector"
 import type { GDObject } from "./object"
@@ -13,6 +14,7 @@ import {
 import { clamp, wrap } from "../utils/math"
 
 import { toastErrorTheme } from "../const"
+import { database } from "../firebase/init"
 
 export const LEVEL_BOUNDS = {
     start: vec(0, 0),
@@ -276,7 +278,7 @@ export class EditorNode extends PIXI.Container {
         )
         this.updateVisibleChunks(app)
 
-        app.ticker.add((delta) => {
+        app.ticker.add(() => {
             this.cameraPos = this.cameraPos.clamped(
                 LEVEL_BOUNDS.start,
                 LEVEL_BOUNDS.end
@@ -354,17 +356,44 @@ export class EditorNode extends PIXI.Container {
 }
 
 export class ObjectNode extends PIXI.Container {
+    tooltip: TooltipNode | null = null
+    isHovering: boolean = false
+
     constructor(obj: GDObject, layerGroup: PIXI_LAYERS.Group) {
         super()
         let sprite = new PIXI.Sprite(
             PIXI.Texture.from(`gd/objects/main/${obj.id}.png`)
         )
 
+        sprite.interactive = true
+
         sprite.anchor.set(0.5)
         sprite.scale.set(0.25, -0.25)
         this.parentGroup = layerGroup
         this.update(obj)
         this.addChild(sprite)
+
+        sprite.on("mouseover", () => {
+            this.isHovering = true
+
+            let t = setTimeout(() => {
+                if (this.isHovering) {
+                    this.tooltip = new TooltipNode(this)
+
+                    this.addChild(this.tooltip)
+                }
+
+                clearTimeout(t)
+            }, 1000)
+        })
+
+        sprite.on("mouseout", () => {
+            this.isHovering = false
+
+            this.removeChild(this.tooltip)
+
+            this.tooltip = null
+        })
     }
 
     update(obj: GDObject) {
@@ -379,6 +408,48 @@ export class ObjectNode extends PIXI.Container {
 
     sprite() {
         return this.getChildAt(0) as PIXI.Sprite
+    }
+}
+
+class TooltipNode extends PIXI.Graphics {
+    constructor(on: ObjectNode) {
+        super()
+
+        get(ref(database, `userPlaced/${on.name}`))
+            .then((username) => {
+                let text = new PIXI.Text(username.val(), {
+                    fontSize: 12,
+                    fill: 0xffffff,
+                    align: "left",
+                })
+
+                // todo: why text flipped
+                text.scale.y *= -1
+
+                text.resolution = 3
+                text.x -= on.width
+                text.y += on.height + 5
+
+                this.beginFill(0x000000, 0.7)
+                this.drawRoundedRect(
+                    text.x - 2.5,
+                    on.height / 2 + 3,
+                    text.width + 5,
+                    text.height + 2,
+                    5
+                )
+                this.endFill()
+
+                this.addChild(text)
+            })
+            .catch((err) => {
+                console.error(err)
+
+                toast.push(
+                    `Failed to get username! (${err.message})`,
+                    toastErrorTheme
+                )
+            })
     }
 }
 

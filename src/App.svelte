@@ -2,6 +2,7 @@
     import { SvelteToast } from "@zerodevx/svelte-toast"
 
     import Auth from "./auth/Auth.svelte"
+    import Countdown from "./Countdown.svelte"
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
 
@@ -16,6 +17,7 @@
 {:else}
     <h1><pre>loading</pre></h1>
 {/if}
+<!-- <Countdown /> -->
 <!-- 
 <button
     style="position: absolute"
