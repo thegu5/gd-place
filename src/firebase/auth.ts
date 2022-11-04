@@ -9,6 +9,10 @@ import {
     signOut as logOut,
     type UserCredential,
     GithubAuthProvider,
+    signInWithEmailAndPassword,
+    signInWithCredential,
+    AuthCredential,
+    signInWithCustomToken,
 } from "firebase/auth"
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
@@ -16,8 +20,6 @@ import { derived, writable, type Writable } from "svelte/store"
 import { auth, database } from "./init"
 
 let googleProvider = new GoogleAuthProvider()
-googleProvider.addScope("https://www.googleapis.com/auth/userinfo.profile")
-
 let githubProvider = new GithubAuthProvider()
 
 export type UserData = {
@@ -47,10 +49,6 @@ export const initUserData = (uid: string, username: string) => {
         lastDeleted: 0,
     })
 }
-
-// export const setUserData = (uid: string, field: string, data) => {
-//     return set(ref(database, `userData/${uid}/${field}`), data);
-// };
 
 export const canEdit = derived(
     currentUserData,
@@ -90,27 +88,3 @@ onAuthStateChanged(auth, (user) => {
         currentUserData.set(null)
     }
 })
-
-// onAuthStateChanged(auth, user => {
-//     if (user) {
-//         currentUser.set(user);
-
-//         if (userDataListener != null) {
-//             userDataListener();
-//         }
-//         userDataListener = onValue(
-//             ref(database, `userData/${user.uid}`),
-//             snapshot => {
-//                 if (snapshot.val() == null) {
-//                     set(ref(database, `userData/${user.uid}`), {
-//                         username: null,
-//                         lastPlaced: Date.now(),
-//                     });
-//                 }
-//                 userExtraData.set(snapshot.val());
-//             }
-//         );
-//     } else {
-//         currentUser.set(null);
-//     }
-// });

@@ -1,17 +1,18 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount } from "svelte"
 
-    import { vec } from "../utils/vector";
-    import { DRAGGING_THRESHOLD, EditorApp } from "./app";
-    import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object";
-    import { EDIT_BUTTONS } from "./edit";
-    import { lazyLoad } from "../lazyLoad";
-    import { addObjectToLevel } from "../firebase/database";
-    import { canEdit, currentUserData, signInGoogle } from "../firebase/auth";
-    import { SvelteToast, toast } from "@zerodevx/svelte-toast";
+    import { vec } from "../utils/vector"
+    import { DRAGGING_THRESHOLD, EditorApp } from "./app"
+    import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object"
+    import { EDIT_BUTTONS } from "./edit"
+    import { lazyLoad } from "../lazyLoad"
+    import { addObjectToLevel } from "../firebase/database"
+    import { canEdit, currentUserData, signInGoogle } from "../firebase/auth"
+    import { toast } from "@zerodevx/svelte-toast"
+    import { toastErrorTheme } from "../const"
 
-    let pixiCanvas: HTMLCanvasElement;
-    export let pixiApp: EditorApp;
+    let pixiCanvas: HTMLCanvasElement
+    export let pixiApp: EditorApp
 
     enum EditorMenu {
         Build,
@@ -19,96 +20,94 @@
         Delete,
     }
 
-    let currentMenu = EditorMenu.Build;
-    let currentEditTab = 0;
+    let currentMenu = EditorMenu.Build
+    let currentEditTab = 0
     const switchMenu = (to: EditorMenu) => {
-        currentMenu = to;
+        currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
-            pixiApp.editorNode.removePreview();
-            pixiApp.editorNode.setObjectsSelectable(true);
+            pixiApp.editorNode.removePreview()
+            pixiApp.editorNode.setObjectsSelectable(true)
         } else {
-            pixiApp.editorNode.setObjectsSelectable(false);
-            pixiApp.editorNode.deselectObject();
+            pixiApp.editorNode.setObjectsSelectable(false)
+            pixiApp.editorNode.deselectObject()
         }
-    };
+    }
 
     onMount(() => {
-        pixiApp = new EditorApp(pixiCanvas);
-        switchMenu(EditorMenu.Build);
-    });
+        pixiApp = new EditorApp(pixiCanvas)
+        switchMenu(EditorMenu.Build)
+    })
 
     // just for testing
-    let lastPlaced = 0;
-    let lastDeleted = 0;
+    let lastPlaced = 0
+    let lastDeleted = 0
 
-    let placeTimeLeft = 6969696969;
-    let deleteTimeLeft = 6969696969;
+    let placeTimeLeft = 6969696969
+    let deleteTimeLeft = 6969696969
 
-    const timer = 5 * 60;
+    const timer = 5 * 60
 
     const updateTimeLeft = () => {
-        const now = Date.now();
-        placeTimeLeft = Math.max(timer - (now - lastPlaced) / 1000, 0);
-        deleteTimeLeft = Math.max(timer - (now - lastDeleted) / 1000, 0);
-    };
+        const now = Date.now()
+        placeTimeLeft = Math.max(timer - (now - lastPlaced) / 1000, 0)
+        deleteTimeLeft = Math.max(timer - (now - lastDeleted) / 1000, 0)
+    }
 
     setInterval(() => {
-        updateTimeLeft();
-    }, 200);
+        updateTimeLeft()
+    }, 200)
 
-    let selectedObject = 1;
+    let selectedObject = 1
 
     const gradientFunc = (t) =>
-        `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`;
+        `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`
 
-    let userUID = null;
+    let userUID = null
 
     currentUserData.subscribe((value) => {
         if (typeof value != "string" && value != null) {
-            userUID = value.user.uid;
+            userUID = value.user.uid
             if (typeof value.data != "string" && value.data != null) {
-                lastDeleted = value.data.lastDeleted;
-                lastPlaced = value.data.lastPlaced;
-                updateTimeLeft();
+                lastDeleted = value.data.lastDeleted
+                lastPlaced = value.data.lastPlaced
+                updateTimeLeft()
             }
         }
-    });
+    })
 </script>
-
-<SvelteToast />
 
 <svelte:window
     on:pointerup={(e) => {
-        pixiApp.dragging = null;
+        pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
-        pixiApp.mousePos = vec(e.pageX, e.pageY);
+        pixiApp.mousePos = vec(e.pageX, e.pageY)
         if (
             pixiApp.dragging &&
             !pixiApp.draggingThresholdReached &&
             pixiApp.mousePos.distTo(pixiApp.dragging.prevMouse) >=
                 DRAGGING_THRESHOLD
         ) {
-            pixiApp.draggingThresholdReached = true;
-            pixiApp.dragging.prevMouse = vec(e.pageX, e.pageY);
+            pixiApp.draggingThresholdReached = true
+            pixiApp.dragging.prevMouse = vec(e.pageX, e.pageY)
         }
     }}
     on:keydown={(e) => {
         if ($canEdit) {
             if (e.code == "Digit1") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Build);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Build)
+                return
             }
             if (e.code == "Digit2") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Edit);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Edit)
+                return
             }
             if (e.code == "Digit3") {
-                e.preventDefault();
-                switchMenu(EditorMenu.Delete);
-                return;
+                e.preventDefault()
+                switchMenu(EditorMenu.Delete)
+                return
             }
             for (let tab of EDIT_BUTTONS) {
                 for (let button of tab.buttons) {
@@ -117,13 +116,13 @@
                         e.shiftKey == button.shortcut?.shift &&
                         e.altKey == button.shortcut?.alt
                     ) {
-                        let obj = pixiApp.editorNode.objectPreview;
-                        e.preventDefault();
+                        let obj = pixiApp.editorNode.objectPreview
+                        e.preventDefault()
                         if (obj != null) {
-                            button.cb(obj);
-                            pixiApp.editorNode.updateObjectPreview();
+                            button.cb(obj)
+                            pixiApp.editorNode.updateObjectPreview()
                         }
-                        return;
+                        return
                     }
                 }
             }
@@ -136,52 +135,52 @@
         class="pixi_canvas"
         bind:this={pixiCanvas}
         on:pointerdown={(e) => {
-            pixiApp.draggingThresholdReached = false;
+            pixiApp.draggingThresholdReached = false
             pixiApp.dragging = {
                 prevCamera: pixiApp.editorNode.cameraPos.clone(),
                 prevMouse: vec(e.pageX, e.pageY),
-            };
+            }
         }}
         on:wheel={(e) => {
-            e.preventDefault();
+            e.preventDefault()
             if (e.ctrlKey) {
                 let wm = pixiApp.editorNode.toWorld(
                     pixiApp.mousePos,
                     pixiApp.canvasSize()
-                );
-                let prevZoom = pixiApp.editorNode.zoom();
-                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1;
+                )
+                let prevZoom = pixiApp.editorNode.zoom()
+                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
                 pixiApp.editorNode.zoomLevel = Math.min(
                     24,
                     Math.max(-4, pixiApp.editorNode.zoomLevel)
-                );
-                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom;
+                )
+                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
                 pixiApp.editorNode.cameraPos = wm.plus(
                     pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-                );
+                )
             } else if (e.shiftKey) {
-                pixiApp.editorNode.cameraPos.x += e.deltaY;
-                pixiApp.editorNode.cameraPos.y -= e.deltaX;
+                pixiApp.editorNode.cameraPos.x += e.deltaY
+                pixiApp.editorNode.cameraPos.y -= e.deltaX
             } else {
-                pixiApp.editorNode.cameraPos.y -= e.deltaY;
-                pixiApp.editorNode.cameraPos.x += e.deltaX;
+                pixiApp.editorNode.cameraPos.y -= e.deltaY
+                pixiApp.editorNode.cameraPos.x += e.deltaX
             }
         }}
         on:pointerup={(e) => {
-            pixiApp.mousePos = vec(e.pageX, e.pageY);
+            pixiApp.mousePos = vec(e.pageX, e.pageY)
             if (currentMenu == EditorMenu.Delete) {
-                return;
+                return
             }
             if ($canEdit) {
                 if (
                     pixiApp.dragging == null ||
                     !pixiApp.draggingThresholdReached
                 ) {
-                    const settings = getObjSettings(selectedObject);
+                    const settings = getObjSettings(selectedObject)
                     let snapped = pixiApp.editorNode
                         .toWorld(pixiApp.mousePos, pixiApp.canvasSize())
                         .snapped(30)
-                        .plus(vec(15, 15));
+                        .plus(vec(15, 15))
                     pixiApp.editorNode.objectPreview = new GDObject(
                         selectedObject,
                         snapped.x + settings.offset_x,
@@ -190,8 +189,8 @@
                         false,
                         1.0,
                         50
-                    );
-                    pixiApp.editorNode.updateObjectPreview();
+                    )
+                    pixiApp.editorNode.updateObjectPreview()
                 }
             }
         }}
@@ -207,11 +206,11 @@
             height="75"
             id="music_button"
             on:click={() => {
-                pixiApp.playingMusic = !pixiApp.playingMusic;
+                pixiApp.playingMusic = !pixiApp.playingMusic
                 if (pixiApp.playingMusic) {
-                    pixiApp.playMusic();
+                    pixiApp.playMusic()
                 } else {
-                    pixiApp.stopMusic();
+                    pixiApp.stopMusic()
                 }
             }}
         />
@@ -224,7 +223,7 @@
                     class="invis_button wiggle_button"
                     style:opacity={currentMenu == EditorMenu.Build ? 1 : 0.25}
                     on:click={() => {
-                        switchMenu(EditorMenu.Build);
+                        switchMenu(EditorMenu.Build)
                     }}
                 >
                     <img
@@ -245,7 +244,7 @@
                 <button
                     class="invis_button wiggle_button"
                     on:click={() => {
-                        switchMenu(EditorMenu.Edit);
+                        switchMenu(EditorMenu.Edit)
                     }}
                     style:opacity={currentMenu == EditorMenu.Edit ? 1 : 0.25}
                 >
@@ -260,7 +259,7 @@
                     class="invis_button wiggle_button"
                     style:opacity={currentMenu == EditorMenu.Delete ? 1 : 0.25}
                     on:click={() => {
-                        switchMenu(EditorMenu.Delete);
+                        switchMenu(EditorMenu.Delete)
                     }}
                 >
                     <img
@@ -291,8 +290,8 @@
                                     ? "selected_obj_button"
                                     : ""}
                                 on:click={() => {
-                                    console.log(objectData.id);
-                                    selectedObject = objectData.id;
+                                    console.log(objectData.id)
+                                    selectedObject = objectData.id
                                 }}
                             >
                                 <img
@@ -310,7 +309,7 @@
                             <button
                                 class="tab_button invis_button"
                                 on:click={() => {
-                                    currentEditTab = i;
+                                    currentEditTab = i
                                 }}
                                 style:opacity={currentEditTab == i
                                     ? "1"
@@ -340,8 +339,8 @@
                                     ) {
                                         editButton.cb(
                                             pixiApp.editorNode.objectPreview
-                                        );
-                                        pixiApp.editorNode.updateObjectPreview();
+                                        )
+                                        pixiApp.editorNode.updateObjectPreview()
                                     }
                                 }}
                             >
@@ -389,12 +388,15 @@
                         ) {
                             addObjectToLevel(pixiApp.editorNode.objectPreview)
                                 .catch((err) => {
-                                    console.log(err);
-                                    toast.push(err.message);
+                                    console.log(err)
+                                    toast.push(
+                                        `Failed to place object! (${err.message})`,
+                                        toastErrorTheme
+                                    )
                                 })
                                 .then(() => {
-                                    pixiApp.editorNode.removePreview();
-                                });
+                                    pixiApp.editorNode.removePreview()
+                                })
                         }
                     }}
                 >
@@ -425,7 +427,7 @@
                     disabled={deleteTimeLeft > 0}
                     on:click={() => {
                         if (deleteTimeLeft == 0) {
-                            pixiApp.editorNode.deleteSelectedObject();
+                            pixiApp.editorNode.deleteSelectedObject()
                         }
                     }}
                 >

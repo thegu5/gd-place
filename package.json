@@ -12,8 +12,6 @@
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^1.0.2",
         "@tsconfig/svelte": "^3.0.0",
-        "@types/stats.js": "^0.17.0",
-        "stats.js": "^0.17.0",
         "svelte": "^3.49.0",
         "svelte-check": "^2.8.1",
         "svelte-preprocess": "^4.10.7",
@@ -25,6 +23,7 @@
         "@pixi/layers": "^1.0.11",
         "@types/howler": "^2.2.7",
         "@zerodevx/svelte-toast": "^0.8.0",
+        "dotenv": "^16.0.3",
         "firebase": "^9.13.0",
         "howler": "^2.2.3",
         "iter-tools": "^7.5.0",

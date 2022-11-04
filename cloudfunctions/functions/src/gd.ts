@@ -1,8 +1,6 @@
 import * as functions from "firebase-functions"
-//import * as admin from "firebase-admin"
 
 import fetch from "node-fetch"
-import FormData from "form-data"
 import * as crypto from "crypto"
 import { cycle, zip } from "iter-tools"
 
@@ -11,6 +9,7 @@ const DATABASE = `${BOOMLINGS}/database`
 
 const GDSECRET = "Wmfd2893gb7"
 const ACC_PWD_XOR_KEY = "37526"
+const MESSAGE_XOR_KEY = "14251"
 
 const ERRORS = {
     BOOMLINGS_ERROR: "Failed to post to boomlings.com",
@@ -22,29 +21,15 @@ const ERRORS = {
     INVALID_CODE: "Verification code is invalid",
 }
 
-interface Result<T, E> {
-    data: T | null
-    err: E | null
-    isErr: boolean
-}
-
-const Ok = <T>(data: T): Result<T, any> => {
-    return { data, err: "", isErr: false }
-}
-
-const Err = <E>(err: E): Result<any, E> => {
-    return { data: null, err, isErr: true }
-}
-
 class Code {
-    code: number
+    public code: number
     expirary: Date
 
     // expires after 5 minutes
     static readonly EXP = 300
 
     private static getNewUnusedCode = (): number => {
-        return crypto.randomInt(0, 999999)
+        return crypto.randomInt(100000, 999999)
     }
 
     hasExpired(): boolean {
@@ -71,8 +56,8 @@ class User {
     }
 }
 
-const urlSafeB64 = (data: any): string => {
-    return Buffer.from(data).toString("base64url")
+const b64 = (data: any): string => {
+    return Buffer.from(data).toString("base64")
 }
 
 const xor = (data: string, key: string): string => {
@@ -85,31 +70,20 @@ const xor = (data: string, key: string): string => {
     return out
 }
 
-const gjEncrypt = (pwd: string, key: string): string => {
-    return urlSafeB64(xor(pwd, key))
-}
-
-const fData = (data: { [key: string]: any }): FormData => {
-    let fd = new FormData()
-    Object.entries(data).forEach(([k, v]) => {
-        fd.append(k, v)
-    })
-    return fd
-}
-
-const ACCOUNT_ID = new RegExp(/:2:(?<uid>\d+)/)
-const getAccountId = (username: string): Promise<Result<number, string>> => {
+const ACCOUNT_ID = new RegExp(/:16:(?<uid>\d+)/)
+const getAccountId = (username: string): Promise<number> => {
     functions.logger.info(`User \`${username}\` requested user id.`)
 
-    return new Promise((res, rej) => {
+    return new Promise((res) => {
         fetch(`${DATABASE}/getGJUsers20.php`, {
             method: "POST",
-            body: fData({
+            body: new URLSearchParams({
                 secret: GDSECRET,
                 str: username,
             }),
             headers: {
                 "User-Agent": "",
+                "Content-Type": "application/x-www-form-urlencoded",
             },
         })
             .then((resp) => {
@@ -118,98 +92,113 @@ const getAccountId = (username: string): Promise<Result<number, string>> => {
                         let matched = user.match(ACCOUNT_ID)
 
                         if (matched?.groups) {
-                            res(Ok(parseInt(matched?.groups["uid"])))
+                            res(parseInt(matched?.groups["uid"]))
                         } else {
-                            rej(Err(ERRORS.FAILED_USER))
+                            throw new functions.https.HttpsError(
+                                "unknown",
+                                "User ID regex failed - this is a bug"
+                            )
                         }
                     })
                     .catch((err) => {
                         functions.logger.error(err)
 
-                        rej(Err(ERRORS.FAILED_USER))
+                        throw new functions.https.HttpsError(
+                            "not-found",
+                            ERRORS.FAILED_USER
+                        )
                     })
             })
             .catch((err) => {
                 functions.logger.error(err)
 
-                rej(Err(ERRORS.BOOMLINGS_ERROR))
+                throw new functions.https.HttpsError(
+                    "unavailable",
+                    ERRORS.BOOMLINGS_ERROR
+                )
             })
     })
 }
 
 const currentUsers: Map<number, User> = new Map()
 
-const sendMessageImpl = (uid: number): Promise<Result<null, string>> => {
+const sendMessageImpl = (uid: number): Promise<void> => {
     functions.logger.info(`Sending verification code to user: \`${uid}\`.`)
     let user = new User(uid)
     currentUsers.set(uid, user)
 
-    return new Promise((res, rej) => {
+    return new Promise(() => {
         fetch(`${DATABASE}/uploadGJMessage20.php`, {
             method: "POST",
-            body: fData({
-                accountId: process.env.GD_ACC_ID,
-                gjp: gjEncrypt(process.env.GD_ACC_PWD || "", ACC_PWD_XOR_KEY),
-                toAccountId: uid,
-                subject: urlSafeB64("GD Place Account Verification"),
-                body: urlSafeB64(
-                    `Enter this 6 digit code on GD Place to verify your account:\n ${user.code}\n Do not share this code with anyone.`
+            body: new URLSearchParams({
+                accountID: "22426057",
+                gjp: b64(xor(process.env.GD_ACC_PWD || "", ACC_PWD_XOR_KEY)),
+                toAccountID: uid.toString(),
+                subject: b64("Verify Account"),
+                body: b64(
+                    xor(
+                        `Enter this 6 digit code on GD Place to verify your account:\n${user.code.code}\nDo not share this code with anyone.`,
+                        MESSAGE_XOR_KEY
+                    )
                 ),
                 secret: GDSECRET,
             }),
             headers: {
                 "User-Agent": "",
+                "Content-Type": "application/x-www-form-urlencoded",
             },
         })
             .then((resp) => {
                 resp.text().then((ok) => {
-                    if (ok !== "-1") {
-                        res(Ok(null))
+                    if (ok === "-1") {
+                        functions.logger.error(
+                            `Failed to message user: \`${uid}\``
+                        )
+
+                        throw new functions.https.HttpsError(
+                            "not-found",
+                            ERRORS.FAILED_MESSAGE
+                        )
                     }
-
-                    functions.logger.error(`Failed to message user: \`${uid}\``)
-
-                    rej(Err(ERRORS.FAILED_MESSAGE))
                 })
             })
             .catch((err) => {
                 functions.logger.error(err)
 
-                rej(Err(ERRORS.BOOMLINGS_ERROR))
+                throw new functions.https.HttpsError(
+                    "unavailable",
+                    ERRORS.BOOMLINGS_ERROR
+                )
             })
     })
 }
 
-export const sendMessage = functions.https.onCall(async (data, request) => {
-    let id = await getAccountId(data.username)
+export const sendMessage = functions.https.onCall(async (data) => {
+    let id: number = await getAccountId(data.username)
 
-    if (id.err) {
-        return id.err
-    }
-
-    return await sendMessageImpl(id.data || 0)
+    return await sendMessageImpl(id)
 })
 
-const verifyCodeImpl = (uid: number, code: number): Result<null, string> => {
-    let user = currentUsers.get(uid)
+export const verifyCode = functions.https.onCall(async (data) => {
+    let user = currentUsers.get(data.uid)
 
     if (!user) {
-        return Err(ERRORS.FAILED_USER)
+        throw new functions.https.HttpsError("not-found", ERRORS.FAILED_USER)
     }
 
     if (user.code.hasExpired()) {
-        return Err(ERRORS.CODE_EXPIRED)
+        throw new functions.https.HttpsError(
+            "deadline-exceeded",
+            ERRORS.CODE_EXPIRED
+        )
     }
 
-    if (!user.code.is(code)) {
-        return Err(ERRORS.INVALID_CODE)
+    if (!user.code.is(data.code)) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            ERRORS.INVALID_CODE
+        )
     }
 
-    currentUsers.delete(uid)
-
-    return Ok(null)
-}
-
-export const verifyCode = functions.https.onCall(async (data, request) => {
-    return verifyCodeImpl(data.uid, data.code)
+    currentUsers.delete(data.uid)
 })

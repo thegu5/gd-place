@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { toast, SvelteToast } from "@zerodevx/svelte-toast";
+    import { toast } from "@zerodevx/svelte-toast"
+    import { toastErrorTheme, toastSuccessTheme } from "../const"
 
     import {
         canEdit,
@@ -8,49 +9,49 @@
         signInGoogle,
         signOut,
         type UserData,
-    } from "../firebase/auth";
+    } from "../firebase/auth"
 
-    export let loadedUserData: UserData | null;
+    export let loadedUserData: UserData | null
 
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
             cb: () => {
-                buttonsDisabled = true;
+                buttonsDisabled = true
                 signInGoogle()
                     .then(() => {
-                        loginPopupVisible = false;
-                        buttonsDisabled = false;
+                        loginPopupVisible = false
+                        buttonsDisabled = false
 
-                        toast.push("Login Successful!", toastSuccessTheme);
+                        toast.push("Login Successful!", toastSuccessTheme)
                     })
                     .catch((err) => {
-                        console.error(err);
-                        buttonsDisabled = false;
+                        console.error(err)
+                        buttonsDisabled = false
 
-                        toast.push("Failed to login!", toastErrorTheme);
-                    });
+                        toast.push("Failed to login!", toastErrorTheme)
+                    })
             },
         },
         {
             image: "github.svg",
             name: "GitHub",
             cb: () => {
-                buttonsDisabled = true;
+                buttonsDisabled = true
                 signInGithub()
                     .then(() => {
-                        loginPopupVisible = false;
-                        buttonsDisabled = false;
+                        loginPopupVisible = false
+                        buttonsDisabled = false
 
-                        toast.push("Login Successful!", toastSuccessTheme);
+                        toast.push("Login Successful!", toastSuccessTheme)
                     })
                     .catch((err) => {
-                        console.error(err);
-                        buttonsDisabled = false;
+                        console.error(err)
+                        buttonsDisabled = false
 
-                        toast.push("Failed to login!", toastErrorTheme);
-                    });
+                        toast.push("Failed to login!", toastErrorTheme)
+                    })
             },
         },
         {
@@ -63,39 +64,22 @@
             name: "GD",
             cb: () => {},
         },
-    ];
+    ]
 
-    const toastSuccessTheme = {
-        theme: {
-            "--toastColor": "mintcream",
-            "--toastBackground": "rgba(72, 187, 120, 0.9)",
-            "--toastBarBackground": "#2F855A",
-        },
-    };
-    const toastErrorTheme = {
-        theme: {
-            "--toastColor": "mintcream",
-            "--toastBackground": "rgba(187, 72, 72, 0.9)",
-            "--toastBarBackground": "#852F2F",
-        },
-    };
+    let loginPopupVisible = false
 
-    let loginPopupVisible = false;
+    let buttonsDisabled = false
 
-    let buttonsDisabled = false;
-
-    let usernameInput = "";
-    $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,15}$/);
+    let usernameInput = ""
+    $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,15}$/)
 </script>
-
-<SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
 <div class="all">
     {#if loadedUserData == null}
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                loginPopupVisible = true;
+                loginPopupVisible = true
             }}
         >
             <img
@@ -113,12 +97,12 @@
                         toast.push(
                             "Successfully logged out!",
                             toastSuccessTheme
-                        );
+                        )
                     })
                     .catch((err) => {
-                        console.error(err);
-                        toast.push("Failed to log out!", toastErrorTheme);
-                    });
+                        console.error(err)
+                        toast.push("Failed to log out!", toastErrorTheme)
+                    })
             }}
         >
             <img
@@ -137,7 +121,7 @@
             <button
                 class="back_button invis_button wiggle_button blur_bg"
                 on:click={() => {
-                    loginPopupVisible = false;
+                    loginPopupVisible = false
                 }}
             >
                 <img draggable="false" src="login/back.svg" alt="back arrow" />
@@ -169,16 +153,14 @@
                         bind:value={usernameInput}
                         class="username_input"
                         type="text"
+                        required
                     />
                     <button
                         disabled={!validUsername}
                         style:opacity={validUsername ? "1" : "0.25"}
                         class="checkmark_button invis_button wiggle_button"
                         on:click={() => {
-                            initUserData(
-                                loadedUserData.user.uid,
-                                usernameInput
-                            );
+                            initUserData(loadedUserData.user.uid, usernameInput)
                         }}
                     >
                         <img
