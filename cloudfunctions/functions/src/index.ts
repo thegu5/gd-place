@@ -127,22 +127,7 @@ export const initUserWithUsername = functions.https.onCall(
         let promises: Promise<DataSnapshot>[] = []
 
         snapshot.forEach((child) => {
-            //const usernames = []
-
             promises.push(db.ref(`/userData/${child.key}/username`).get())
-
-            // db.ref(`/userData/${child.key}/username`)
-            //     .Promise.all(promises)
-            //     .then((usernames) => {
-            //         usernames.forEach((username) => {
-            //             if (username.val() === data.username) {
-            // throw new functions.https.HttpsError(
-            //     "already-exists",
-            //     "Username already taken"
-            // )
-            //             }
-            //         })
-            //     })
         })
 
         let usernames = await Promise.all(promises)
@@ -153,5 +138,12 @@ export const initUserWithUsername = functions.https.onCall(
                 "Username already taken"
             )
         }
+
+        // make new user
+        db.ref(`/userData/${data.uid}`).set({
+            username: data.username,
+            lastPlaced: 0,
+            lastDeleted: 0,
+        })
     }
 )
