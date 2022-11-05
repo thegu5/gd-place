@@ -4,7 +4,7 @@ import { toast } from "@zerodevx/svelte-toast"
 import { get, ref } from "@firebase/database"
 
 import { vec, Vector } from "../utils/vector"
-import type { GDObject } from "./object"
+import { GdColor, type GDObject } from "./object"
 import {
     deleteObjectFromLevel,
     initChunkBehavior,
@@ -153,8 +153,12 @@ export class EditorNode extends PIXI.Container {
     deselectObject() {
         if (this.selectedObjectNode != null) {
             this.selectedObjectNode.getChildByName("select_box").destroy()
-            this.selectedObjectNode.sprite().tint = parseInt(
-                this.selectedObjectNode.color,
+            this.selectedObjectNode.mainSprite().tint = parseInt(
+                this.selectedObjectNode.mainColor.hex,
+                16
+            )
+            this.selectedObjectNode.detailSprite().tint = parseInt(
+                this.selectedObjectNode.detailColor.hex,
                 16
             )
             this.selectedObjectNode = null
@@ -225,9 +229,20 @@ export class EditorNode extends PIXI.Container {
             LEVEL_BOUNDS.end.y
         )
 
-        this.objectPreviewNode.setColor(this.objectPreview.color)
-        this.objectPreviewNode.sprite().alpha = this.objectPreview.opacity
-        this.objectPreviewNode.sprite().blendMode = this.objectPreview.blending
+        this.objectPreviewNode.setMainColor(this.objectPreview.mainColor)
+        this.objectPreviewNode.setDetailColor(this.objectPreview.detailColor)
+        this.objectPreviewNode.mainSprite().alpha =
+            this.objectPreview.mainColor.opacity
+        this.objectPreviewNode.detailSprite().alpha =
+            this.objectPreview.detailColor.opacity
+
+        this.objectPreviewNode.mainSprite().blendMode = this.objectPreview
+            .mainColor.blending
+            ? PIXI.BLEND_MODES.ADD
+            : PIXI.BLEND_MODES.NORMAL
+
+        this.objectPreviewNode.detailSprite().blendMode = this.objectPreview
+            .detailColor.blending
             ? PIXI.BLEND_MODES.ADD
             : PIXI.BLEND_MODES.NORMAL
 
@@ -343,8 +358,8 @@ export class EditorNode extends PIXI.Container {
                     "box"
                 ) as PIXI.Graphics
                 let [width, height] = [
-                    this.objectPreviewNode.sprite().width,
-                    this.objectPreviewNode.sprite().height,
+                    this.objectPreviewNode.mainSprite().width,
+                    this.objectPreviewNode.mainSprite().height,
                 ]
                 box.clear()
                 box.lineStyle(
@@ -377,7 +392,8 @@ export class EditorNode extends PIXI.Container {
 
 export class ObjectNode extends PIXI.Container {
     isHovering: boolean = false
-    color: string = "ffffff"
+    mainColor: GdColor = new GdColor("ffffff", false, 1.0)
+    detailColor: GdColor = new GdColor("ffffff", false, 1.0)
 
     constructor(
         obj: GDObject,
@@ -437,26 +453,47 @@ export class ObjectNode extends PIXI.Container {
         this.rotation = -(obj.rotation * Math.PI) / 180.0
         this.position.set(obj.x, obj.y)
         this.zOrder = obj.zOrder
-        if (obj.color) this.setColor(obj.color)
+        if (obj.mainColor.hex) this.setMainColor(obj.mainColor)
+        if (obj.detailColor.hex) this.setDetailColor(obj.detailColor)
 
-        if (obj.blending) this.sprite().blendMode = PIXI.BLEND_MODES.ADD
-        else this.sprite().blendMode = PIXI.BLEND_MODES.NORMAL
+        if (obj.mainColor.blending)
+            this.mainSprite().blendMode = PIXI.BLEND_MODES.ADD
+        else this.mainSprite().blendMode = PIXI.BLEND_MODES.NORMAL
 
-        if (obj.opacity) this.sprite().alpha = obj.opacity
+        if (obj.detailColor.blending)
+            this.detailSprite().blendMode = PIXI.BLEND_MODES.ADD
+        else this.detailSprite().blendMode = PIXI.BLEND_MODES.NORMAL
+
+        if (obj.mainColor.opacity)
+            this.mainSprite().alpha = obj.mainColor.opacity
+        else this.mainSprite().alpha = 1.0
+
+        if (obj.detailColor.opacity)
+            this.detailSprite().alpha = obj.detailColor.opacity
+        else this.detailSprite().alpha = 1.0
     }
 
-    sprite() {
+    mainSprite() {
         return this.getChildAt(0) as PIXI.Sprite
     }
+    detailSprite() {
+        return this.getChildAt(1) as PIXI.Sprite
+    }
 
-    setColor(color: string) {
-        this.color = color
-        this.sprite().tint = parseInt(color, 16)
+    setMainColor(color: GdColor) {
+        this.mainColor = color
+        this.mainSprite().tint = parseInt(color.hex, 16)
+    }
+
+    setDetailColor(color: GdColor) {
+        this.detailColor = color
+        this.detailSprite().tint = parseInt(color.hex, 16)
     }
 }
 
 class TooltipNode extends PIXI.Graphics {
     text: PIXI.Text
+    //nameText: PIXI.Text
     public zoom: number = 1
 
     currentObject: ObjectNode | null = null
@@ -470,6 +507,13 @@ class TooltipNode extends PIXI.Graphics {
             fill: 0xffffff,
             align: "left",
         })
+
+        // this.nameText = new PIXI.Text("", {
+        //     fontFamily: "Cabin",
+        //     fontSize: 12,
+        //     fill: 0xffffff,
+        //     align: "left",
+        // })
 
         this.text.resolution = 6
         this.addChild(this.text)
@@ -500,10 +544,10 @@ class TooltipNode extends PIXI.Graphics {
         highlight
             .lineStyle(1 / this.currentObject.scale.y, 0x46f0fc, 1)
             .drawRect(
-                -on.sprite().width / 2 - 2,
-                -on.sprite().height / 2 - 2,
-                on.sprite().width + 4,
-                on.sprite().height + 4
+                -on.mainSprite().width / 2 - 2,
+                -on.mainSprite().height / 2 - 2,
+                on.mainSprite().width + 4,
+                on.mainSprite().height + 4
             )
         this.currentObject.addChild(highlight)
 
@@ -548,9 +592,9 @@ export class ObjectSelectionRect extends PIXI.Sprite {
         this.anchor.set(0.5)
         this.interactive = true
         this.scale.x =
-            (objNode.sprite().texture.width * objNode.scale.x) / 16 / 4
+            (objNode.mainSprite().texture.width * objNode.scale.x) / 16 / 4
         this.scale.y =
-            (objNode.sprite().texture.height * objNode.scale.y) / 16 / 4
+            (objNode.mainSprite().texture.height * objNode.scale.y) / 16 / 4
         this.rotation = objNode.rotation
     }
 }

@@ -131,12 +131,16 @@ export class ChunkNode extends PIXI.Container {
             selectableSprite.on("pointerup", () => {
                 if (canEditValue) {
                     editorNode.deselectObject()
-                    objectNode.sprite().tint = 0x00ff00
+                    objectNode.mainSprite().tint = 0x00ff00
+                    objectNode.detailSprite().tint = 0x00ff00
+                    objectNode.mainSprite().alpha = 1.0
+                    objectNode.detailSprite().alpha = 1.0
+
                     const select_box = new PIXI.Graphics()
                     select_box.name = "select_box"
                     let [width, height] = [
-                        objectNode.sprite().width,
-                        objectNode.sprite().height,
+                        objectNode.mainSprite().width,
+                        objectNode.mainSprite().height,
                     ]
                     select_box.clear()
                     select_box

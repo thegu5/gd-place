@@ -3,8 +3,13 @@
 
     import { vec } from "../utils/vector"
     import { DRAGGING_THRESHOLD, EditorApp, storePosState } from "./app"
-    import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object"
-    import { EDIT_BUTTONS } from "./edit"
+    import {
+        GdColor,
+        GDObject,
+        getObjSettings,
+        OBJECT_SETTINGS,
+    } from "./object"
+    import { EDIT_BUTTONS, PALETTE } from "./edit"
     import { lazyLoad } from "../lazyLoad"
     import { addObjectToLevel } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
@@ -208,9 +213,8 @@
                             false,
                             1.0,
                             50,
-                            "ffffff",
-                            false,
-                            1.0
+                            new GdColor("ffffff", false, 1.0),
+                            new GdColor("ffffff", false, 1.0)
                         )
                     } else {
                         pixiApp.editorNode.objectPreview.x =
@@ -348,9 +352,40 @@
                         {/each}
                     </div>
                     <div class="objects_grid">
-                        <!-- {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
-                            
-                        {/each} -->
+                        {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
+                            <button
+                                class="edit_button invis_button wiggle_button"
+                                style={pixiApp.editorNode.objectPreview ==
+                                    null ||
+                                (["cw_5", "ccw_5"].includes(
+                                    editButton["image"]
+                                ) &&
+                                    getObjSettings(
+                                        pixiApp.editorNode.objectPreview.id
+                                    ).solid)
+                                    ? "opacity:0.3;"
+                                    : ""}
+                                on:click={() => {
+                                    if (
+                                        pixiApp.editorNode.objectPreview != null
+                                    ) {
+                                        editButton.cb(
+                                            pixiApp.editorNode.objectPreview
+                                        )
+
+                                        pixiApp.editorNode.updateObjectPreview()
+                                    }
+                                }}
+                            >
+                                <img
+                                    draggable="false"
+                                    style="transform: scale({editButton.scale})"
+                                    class="button_icon"
+                                    alt=""
+                                    use:lazyLoad={`gd/editor/edit/${editButton["image"]}.png`}
+                                />
+                            </button>
+                        {/each}
 
                         <!-- extra buttons -->
                         {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
@@ -358,107 +393,109 @@
                                 Z = {pixiApp.editorNode.objectPreview.zOrder}
                             </t>
                         {:else if currentEditTab == 2}
-                            {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
-                                <button
-                                    class="edit_button invis_button wiggle_button"
-                                    style="{pixiApp.editorNode.objectPreview ==
-                                        null ||
-                                    (['cw_5', 'ccw_5'].includes(
-                                        editButton['image']
-                                    ) &&
-                                        getObjSettings(
-                                            pixiApp.editorNode.objectPreview.id
-                                        ).solid)
-                                        ? 'opacity:0.3;'
-                                        : ''}
-                            {editButton['color'] &&
-                                    pixiApp?.editorNode?.objectPreview?.color ==
-                                        editButton['color']
-                                        ? 'outline: 3px solid white;'
-                                        : ''}"
-                                    on:click={() => {
-                                        if (
-                                            pixiApp.editorNode.objectPreview !=
-                                            null
-                                        ) {
-                                            if (editButton["color"]) {
-                                                pixiApp.editorNode.objectPreview.color =
-                                                    editButton["color"]
-                                            } else
-                                                editButton.cb(
-                                                    pixiApp.editorNode
-                                                        .objectPreview
-                                                )
-
-                                            pixiApp.editorNode.updateObjectPreview()
-                                        }
-                                    }}
-                                >
-                                    {#if editButton["image"]}
-                                        <img
-                                            draggable="false"
-                                            style="transform: scale({editButton.scale})"
-                                            class="button_icon"
-                                            alt=""
-                                            use:lazyLoad={`gd/editor/edit/${editButton["image"]}.png`}
-                                        />
-                                    {:else if editButton["color"]}
-                                        <div
-                                            class="color_icon"
-                                            style="background-color: {'#' +
-                                                editButton['color']};
-                                           transform: scale({editButton.scale});
-                                           "
-                                        />
-                                    {/if}
-                                </button>
-                            {/each}
-
-                            <div class="blending_opacity_container">
-                                <button
-                                    class="blending_toggle wiggle_button"
-                                    style={pixiApp.editorNode.objectPreview
-                                        ?.blending
-                                        ? "border: 2px solid red"
-                                        : ""}
-                                    on:click={() => {
-                                        if (
-                                            pixiApp.editorNode.objectPreview !=
-                                            null
-                                        ) {
-                                            pixiApp.editorNode.objectPreview.blending =
-                                                !pixiApp.editorNode
-                                                    .objectPreview.blending
-                                            pixiApp.editorNode.updateObjectPreview()
-                                        }
-                                    }}
-                                >
-                                    Blending
-                                </button>
-                                <!-- opacity slider -->
-                                <div class="opacity_slider_container">
-                                    <div class="edit_info_text">Opacity</div>
-                                    <input
-                                        type="range"
-                                        min="0.1"
-                                        max="1"
-                                        step="0.01"
-                                        value={pixiApp.editorNode.objectPreview
-                                            ?.opacity}
-                                        class="opacity_slider"
-                                        on:input={(e) => {
+                            {#each ["Main", "Detail"] as channel}
+                                <div class="color_header">
+                                    {channel}
+                                </div>
+                                {#each PALETTE as color}
+                                    <button
+                                        class="edit_button invis_button wiggle_button"
+                                        on:click={() => {
                                             if (
                                                 pixiApp.editorNode
                                                     .objectPreview != null
                                             ) {
-                                                pixiApp.editorNode.objectPreview.opacity =
-                                                    e.target.value
+                                                if (channel == "Main")
+                                                    pixiApp.editorNode.objectPreview.mainColor.hex =
+                                                        color
+                                                else
+                                                    pixiApp.editorNode.objectPreview.detailColor.hex =
+                                                        color
+
                                                 pixiApp.editorNode.updateObjectPreview()
                                             }
                                         }}
-                                    />
+                                    >
+                                        <div
+                                            class="color_icon"
+                                            style="background-color: {'#' +
+                                                color};"
+                                        />
+                                    </button>
+                                {/each}
+
+                                <div class="blending_opacity_container">
+                                    <button
+                                        class="blending_toggle wiggle_button"
+                                        style={(channel == "Main" &&
+                                            pixiApp.editorNode.objectPreview
+                                                ?.mainColor.blending) ||
+                                        (channel == "Detail" &&
+                                            pixiApp.editorNode.objectPreview
+                                                ?.detailColor.blending)
+                                            ? "border: 2px solid red"
+                                            : ""}
+                                        on:click={() => {
+                                            if (
+                                                pixiApp.editorNode
+                                                    .objectPreview != null
+                                            ) {
+                                                if (channel == "Main")
+                                                    pixiApp.editorNode.objectPreview.mainColor.blending =
+                                                        !pixiApp.editorNode
+                                                            .objectPreview
+                                                            .mainColor.blending
+                                                else if (channel == "Detail")
+                                                    pixiApp.editorNode.objectPreview.detailColor.blending =
+                                                        !pixiApp.editorNode
+                                                            .objectPreview
+                                                            .detailColor
+                                                            .blending
+                                                pixiApp.editorNode.updateObjectPreview()
+                                            }
+                                        }}
+                                    >
+                                        Blending
+                                    </button>
+                                    <!-- opacity slider -->
+                                    <div class="opacity_slider_container">
+                                        <div class="edit_info_text">
+                                            Opacity
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0.1"
+                                            max="1"
+                                            step="0.01"
+                                            value={channel == "Main"
+                                                ? pixiApp.editorNode
+                                                      .objectPreview?.mainColor
+                                                      .opacity
+                                                : pixiApp.editorNode
+                                                      .objectPreview
+                                                      ?.detailColor.opacity}
+                                            class="opacity_slider"
+                                            on:input={(e) => {
+                                                if (
+                                                    pixiApp.editorNode
+                                                        .objectPreview != null
+                                                ) {
+                                                    if (channel == "Main")
+                                                        pixiApp.editorNode.objectPreview.mainColor.opacity =
+                                                            e.target.value
+                                                    else if (
+                                                        channel == "Detail"
+                                                    )
+                                                        pixiApp.editorNode.objectPreview.detailColor.opacity =
+                                                            e.target.value
+
+                                                    pixiApp.editorNode.updateObjectPreview()
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            {/each}
                         {/if}
                     </div>
                 {:else}
@@ -878,6 +915,20 @@
         width: 100%;
         grid-column-end: 8;
         grid-column-start: 1;
+    }
+
+    .color_header {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        width: 100%;
+        grid-column-end: 8;
+        grid-column-start: 1;
+
+        font-family: Pusab;
+        -webkit-text-stroke: 1.5px black;
+        color: white;
+        font-size: var(--font-large);
     }
 
     .blending_toggle {

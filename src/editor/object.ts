@@ -1,5 +1,24 @@
 import { vec } from "../utils/vector"
 
+export class GdColor {
+    constructor(
+        public hex: string,
+        public blending: boolean,
+        public opacity: number
+    ) {}
+    toDatabaseString() {
+        return `${this.hex};${this.blending ? 1 : 0};${this.opacity}`
+    }
+    static fromDatabaseString(str: string) {
+        let [hex, blending, opacity] = str.split(";")
+
+        return new GdColor(hex, blending == "1", parseFloat(opacity))
+    }
+    clone() {
+        return new GdColor(this.hex, this.blending, this.opacity)
+    }
+}
+
 export class GDObject {
     constructor(
         public id: number,
@@ -9,17 +28,16 @@ export class GDObject {
         public flip: boolean,
         public scale: number,
         public zOrder: number,
-        public color: string,
-        public blending: boolean,
-        public opacity: number
+        public mainColor: GdColor,
+        public detailColor: GdColor
     ) {}
 
     toDatabaseString() {
         return `${this.id};${this.x};${this.y};${this.rotation};${
             this.flip ? 1 : 0
-        };${this.scale};${this.zOrder};${this.color};${this.blending ? 1 : 0};${
-            this.opacity
-        }`
+        };${this.scale};${
+            this.zOrder
+        };${this.mainColor.toDatabaseString()};${this.detailColor.toDatabaseString()}`
     }
 
     clone() {
@@ -31,9 +49,8 @@ export class GDObject {
             this.flip,
             this.scale,
             this.zOrder,
-            this.color,
-            this.blending,
-            this.opacity
+            this.mainColor.clone(),
+            this.detailColor.clone()
         )
     }
 
@@ -46,9 +63,12 @@ export class GDObject {
             flip,
             scale,
             zOrder,
-            color,
-            blending,
-            opacity,
+            mainColor,
+            mainBlending,
+            mainOpacity,
+            detailColor,
+            detailBlending,
+            detailOpacity,
         ] = s.split(";")
         //console.log(color)
         return new GDObject(
@@ -60,9 +80,16 @@ export class GDObject {
             flip == "1",
             parseFloat(scale),
             parseInt(zOrder),
-            color,
-            blending == "1",
-            parseFloat(opacity)
+            new GdColor(
+                mainColor,
+                mainBlending == "1",
+                parseFloat(mainOpacity)
+            ),
+            new GdColor(
+                detailColor,
+                detailBlending == "1",
+                parseFloat(detailOpacity)
+            )
         )
     }
 
