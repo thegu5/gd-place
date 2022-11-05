@@ -46,7 +46,6 @@
         switchMenu(EditorMenu.Build)
     })
 
-    // just for testing
     let lastPlaced = 0
     let lastDeleted = 0
 

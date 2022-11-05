@@ -409,9 +409,10 @@ export class ObjectNode extends PIXI.Container {
         })
 
         sprite.on("mouseout", () => {
+            this.isHovering = false
+
             if (tooltip) {
                 tooltip.visible = false
-                this.isHovering = false
                 tooltip.unHighlight()
             }
         })
@@ -485,9 +486,6 @@ class TooltipNode extends PIXI.Graphics {
     update(on: ObjectNode) {
         const padding = 5
 
-        this.x = on.x
-        this.y = on.y
-
         this.text.style.fontSize = Math.min(
             Math.max(MIN_ZOOM - this.zoom, 6),
             20
@@ -524,8 +522,8 @@ class TooltipNode extends PIXI.Graphics {
                     5
                 )
 
-                this.x -= this.width / 2
-                this.y -= this.height - padding * 2
+                this.x = on.x - this.width / 2
+                this.y = on.y - (this.height - padding * 2)
 
                 this.endFill()
 

@@ -96,16 +96,6 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
     functions.logger.log(`deleteobject ${data.chunkId} ${data.objId}`)
 
-    // // check that data.chunkId is number,number
-    // if (!data.chunkId.match(/^\d+,\d+$/)) {
-    //     throw new functions.https.HttpsError("invalid-argument", "Invalid chunkId")
-    // }
-
-    // // check that data.objectId is a valid firebase key
-    // if (!data.objId.match(/^[a-zA-Z0-9_-]+$/)) {
-    //     throw new functions.https.HttpsError("invalid-argument", "Invalid objectId")
-    // }
-
     const ref = db.ref(`/chunks/${data.chunkId}/${data.objId}`)
     ref.remove()
 

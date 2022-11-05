@@ -22,7 +22,11 @@ function time_to_x(t) {
 export function storePosState(app: EditorApp) {
     localStorage.setItem(
         "editorPosition",
-        `{"x": ${app.editorNode.cameraPos.x}, "y": ${app.editorNode.cameraPos.y}, "zoom": ${app.editorNode.zoomLevel}}`
+        JSON.stringify({
+            x: app.editorNode.cameraPos.x,
+            y: app.editorNode.cameraPos.y,
+            zoom: app.editorNode.zoomLevel,
+        })
     )
 }
 
