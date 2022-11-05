@@ -409,47 +409,50 @@
                                 Z={pixiApp.editorNode.objectPreview.zOrder}
                             </t>
                         {:else if currentEditTab == 2}
-                            <button
-                                id="blending_toggle"
-                                style={pixiApp.editorNode.objectPreview
-                                    ?.blending
-                                    ? "border: 2px solid red"
-                                    : ""}
-                                on:click={() => {
-                                    if (
-                                        pixiApp.editorNode.objectPreview != null
-                                    ) {
-                                        pixiApp.editorNode.objectPreview.blending =
-                                            !pixiApp.editorNode.objectPreview
-                                                .blending
-                                        pixiApp.editorNode.updateObjectPreview()
-                                    }
-                                }}
-                            >
-                                Blending
-                            </button>
-                            <!-- opacity slider -->
-                            <div id="opacity_slider_container">
-                                <div class="edit_info_text">Opacity</div>
-                                <input
-                                    type="range"
-                                    min="0.1"
-                                    max="1"
-                                    step="0.01"
-                                    value={pixiApp.editorNode.objectPreview
-                                        ?.opacity}
-                                    class="opacity_slider"
-                                    on:input={(e) => {
+                            <div class="blending_opacity_container">
+                                <button
+                                    class="blending_toggle wiggle_button"
+                                    style={pixiApp.editorNode.objectPreview
+                                        ?.blending
+                                        ? "border: 2px solid red"
+                                        : ""}
+                                    on:click={() => {
                                         if (
                                             pixiApp.editorNode.objectPreview !=
                                             null
                                         ) {
-                                            pixiApp.editorNode.objectPreview.opacity =
-                                                e.target.value
+                                            pixiApp.editorNode.objectPreview.blending =
+                                                !pixiApp.editorNode
+                                                    .objectPreview.blending
                                             pixiApp.editorNode.updateObjectPreview()
                                         }
                                     }}
-                                />
+                                >
+                                    Blending
+                                </button>
+                                <!-- opacity slider -->
+                                <div class="opacity_slider_container">
+                                    <div class="edit_info_text">Opacity</div>
+                                    <input
+                                        type="range"
+                                        min="0.1"
+                                        max="1"
+                                        step="0.01"
+                                        value={pixiApp.editorNode.objectPreview
+                                            ?.opacity}
+                                        class="opacity_slider"
+                                        on:input={(e) => {
+                                            if (
+                                                pixiApp.editorNode
+                                                    .objectPreview != null
+                                            ) {
+                                                pixiApp.editorNode.objectPreview.opacity =
+                                                    e.target.value
+                                                pixiApp.editorNode.updateObjectPreview()
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         {/if}
                     </div>
@@ -601,6 +604,7 @@
         :root {
             --grid-button-size: 45px;
             --grid-gap: 12px;
+            --font-medium: 22px;
         }
 
         .menu {
@@ -627,6 +631,7 @@
     @media screen and (max-width: 500px) {
         :root {
             --grid-button-size: 30px;
+            --font-medium: 18px;
         }
     }
 
@@ -858,7 +863,16 @@
         align-items: center;
     }
 
-    #blending_toggle {
+    .blending_opacity_container {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        width: 100%;
+        grid-column-end: 8;
+        grid-column-start: 1;
+    }
+
+    .blending_toggle {
         height: var(--grid-button-size);
         width: 100%;
         border-radius: 6px;
@@ -867,25 +881,23 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        grid-column-start: 1;
-        grid-column-end: 4;
 
         font-family: Pusab;
         color: white;
         font-size: var(--font-medium);
-        -webkit-text-stroke: 2.5px black;
+        -webkit-text-stroke: 1.5px black;
         justify-self: end;
     }
 
-    #opacity_slider_container {
+    .opacity_slider_container {
         width: 100%;
         height: 100%;
-        grid-column-start: 5;
-        grid-column-end: 7;
+
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 8px;
+        flex-direction: column;
     }
 
     .opacity_slider {
