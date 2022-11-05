@@ -19,6 +19,13 @@ function time_to_x(t) {
     return t * 30 * 10.3761348898
 }
 
+export function storePosState(app: EditorApp) {
+    localStorage.setItem(
+        "editorPosition",
+        `{"x": ${app.editorNode.cameraPos.x}, "y": ${app.editorNode.cameraPos.y}, "zoom": ${app.editorNode.zoomLevel}}`
+    )
+}
+
 export class EditorApp {
     public dragging: null | { prevCamera: Vector; prevMouse: Vector } = null
     public draggingThresholdReached: boolean = false
@@ -44,7 +51,7 @@ export class EditorApp {
         this.music.stop()
     }
 
-    constructor(public canvas: HTMLCanvasElement) {
+    constructor(public canvas: HTMLCanvasElement, editorPosition) {
         let app = new PIXI.Application({
             width: canvas.offsetWidth,
             height: canvas.offsetHeight,
@@ -69,7 +76,7 @@ export class EditorApp {
 
         center.scale.y = -1
 
-        this.editorNode = new EditorNode(app)
+        this.editorNode = new EditorNode(app, editorPosition)
         center.addChild(this.editorNode)
 
         // for (let i = 0; i < 100; i++) {
@@ -116,6 +123,8 @@ export class EditorApp {
                     this.dragging.prevCamera.y +
                     (this.mousePos.y - this.dragging.prevMouse.y) /
                         this.editorNode.zoom()
+                // set editor position to local storage
+                storePosState(this)
             }
             let time
             if (this.playingMusic) {
@@ -143,10 +152,14 @@ export class EditorApp {
     }
 }
 
-function rgbToHexnum([r, g, b]: number[]) {
+export function rgbToHexnum([r, g, b]: number[]) {
     return (
         (Math.floor(r * 255) << 16) +
         (Math.floor(g * 255) << 8) +
         Math.floor(b * 255)
     )
+}
+
+export function hexNumToString(num: number) {
+    return "#" + num.toString(16)
 }

@@ -60,7 +60,9 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let key = await ref.push(object)
 
     // reset timer
-    await lastPlacedRef.set(now)
+    if (uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3")
+        // :mabbog:
+        await lastPlacedRef.set(now)
 
     db.ref(`/userData/${uid}/username`)
         .get()
@@ -108,7 +110,59 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     ref.remove()
 
     // reset timer
-    await lastDeletedRef.set(now)
+    if (uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3")
+        // :mabbog:
+        await lastDeletedRef.set(now)
 
     db.ref(`/userPlaced/${data.objId}`).remove()
 })
+
+export const initUserWithUsername = functions.https.onCall(
+    async (data, request) => {
+        //functions.logger.info(request.auth)
+
+        // this time if the user is already authenticated we block it cause that means they already have a username
+        // if (request.auth) {
+        //     throw new functions.https.HttpsError(
+        //         "already-exists",
+        //         "User is already authenticated"
+        //     )
+        // }
+
+        const db = admin.database()
+
+        let allUsers = db.ref(`/userData/`)
+
+        let snapshot = await allUsers.once("value")
+
+        snapshot.forEach((child) => {
+            ;(async () => {
+                const usernames = []
+
+                usernames.push(
+                    await db.ref(`/userData/${child.key}/username`).get()
+                )
+
+                if (usernames.indexOf(data.username) === -1) {
+                    throw new functions.https.HttpsError(
+                        "already-exists",
+                        "Username already taken"
+                    )
+                }
+
+                // db.ref(`/userData/${child.key}/username`)
+                //     .Promise.all(promises)
+                //     .then((usernames) => {
+                //         usernames.forEach((username) => {
+                //             if (username.val() === data.username) {
+                // throw new functions.https.HttpsError(
+                //     "already-exists",
+                //     "Username already taken"
+                // )
+                //             }
+                //         })
+                //     })
+            })()
+        })
+    }
+)

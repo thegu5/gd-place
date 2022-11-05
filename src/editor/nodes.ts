@@ -13,7 +13,7 @@ import {
 } from "../firebase/database"
 import { clamp, wrap } from "../utils/math"
 
-import { toastErrorTheme } from "../const"
+import { MIN_ZOOM, toastErrorTheme } from "../const"
 import { database } from "../firebase/init"
 
 export const LEVEL_BOUNDS = {
@@ -37,6 +37,8 @@ export class EditorNode extends PIXI.Container {
 
     public selectableWorld: PIXI.Container
     public groundTiling: PIXI.TilingSprite
+
+    public tooltip: TooltipNode
 
     public world: PIXI.Container
 
@@ -151,7 +153,10 @@ export class EditorNode extends PIXI.Container {
     deselectObject() {
         if (this.selectedObjectNode != null) {
             this.selectedObjectNode.getChildByName("select_box").destroy()
-            this.selectedObjectNode.sprite().tint = 0xffffff
+            this.selectedObjectNode.sprite().tint = parseInt(
+                this.selectedObjectNode.color,
+                16
+            )
             this.selectedObjectNode = null
             this.selectedObjectChunk = null
         }
@@ -203,7 +208,8 @@ export class EditorNode extends PIXI.Container {
         }
         this.objectPreviewNode = new ObjectNode(
             this.objectPreview,
-            this.layerGroup
+            this.layerGroup,
+            null
         )
         const box = new PIXI.Graphics()
         box.name = "box"
@@ -219,12 +225,21 @@ export class EditorNode extends PIXI.Container {
             LEVEL_BOUNDS.end.y
         )
 
+        this.objectPreviewNode.setColor(this.objectPreview.color)
+        this.objectPreviewNode.sprite().alpha = this.objectPreview.opacity
+        this.objectPreviewNode.sprite().blendMode = this.objectPreview.blending
+            ? PIXI.BLEND_MODES.ADD
+            : PIXI.BLEND_MODES.NORMAL
+
         this.objectPreviewNode.addChild(box)
         this.addChild(this.objectPreviewNode)
     }
 
-    constructor(app: PIXI.Application) {
+    constructor(app: PIXI.Application, editorPosition) {
         super()
+
+        this.cameraPos = vec(editorPosition.x ?? 0, editorPosition.y ?? 0)
+        this.zoomLevel = editorPosition.zoom ?? 0
 
         let gridGraph = new PIXI.Graphics()
         this.addChild(gridGraph)
@@ -277,6 +292,9 @@ export class EditorNode extends PIXI.Container {
             selectableLayerGroup
         )
         this.updateVisibleChunks(app)
+
+        this.tooltip = new TooltipNode()
+        this.addChild(this.tooltip)
 
         app.ticker.add(() => {
             this.cameraPos = this.cameraPos.clamped(
@@ -340,6 +358,8 @@ export class EditorNode extends PIXI.Container {
                     height + 10
                 )
             }
+
+            this.tooltip.zoom = this.zoomLevel
         })
     }
 
@@ -356,44 +376,56 @@ export class EditorNode extends PIXI.Container {
 }
 
 export class ObjectNode extends PIXI.Container {
-    tooltip: TooltipNode | null = null
     isHovering: boolean = false
+    color: string = "ffffff"
 
-    constructor(obj: GDObject, layerGroup: PIXI_LAYERS.Group) {
+    constructor(
+        obj: GDObject,
+        layerGroup: PIXI_LAYERS.Group,
+        // tooltip will be null only on the preview object
+        tooltip: TooltipNode | null
+    ) {
         super()
         let sprite = new PIXI.Sprite(
             PIXI.Texture.from(`gd/objects/main/${obj.id}.png`)
         )
-
         sprite.interactive = true
 
         sprite.anchor.set(0.5)
         sprite.scale.set(0.25, -0.25)
         this.parentGroup = layerGroup
-        this.update(obj)
         this.addChild(sprite)
 
         sprite.on("mouseover", () => {
             this.isHovering = true
 
             let t = setTimeout(() => {
-                if (this.isHovering) {
-                    this.tooltip = new TooltipNode(this)
-
-                    this.addChild(this.tooltip)
+                if (this.isHovering && tooltip) {
+                    tooltip.update(this)
                 }
 
                 clearTimeout(t)
-            }, 1000)
+            }, 250)
         })
 
         sprite.on("mouseout", () => {
-            this.isHovering = false
-
-            this.removeChild(this.tooltip)
-
-            this.tooltip = null
+            if (tooltip) {
+                tooltip.visible = false
+                this.isHovering = false
+                tooltip.unHighlight()
+            }
         })
+
+        let detailSprite = new PIXI.Sprite(
+            PIXI.Texture.from(`gd/objects/detail/${obj.id}.png`)
+        )
+
+        detailSprite.anchor.set(0.5)
+        detailSprite.scale.set(0.25, -0.25)
+        this.parentGroup = layerGroup
+        this.addChild(detailSprite)
+
+        this.update(obj)
     }
 
     update(obj: GDObject) {
@@ -404,43 +436,100 @@ export class ObjectNode extends PIXI.Container {
         this.rotation = -(obj.rotation * Math.PI) / 180.0
         this.position.set(obj.x, obj.y)
         this.zOrder = obj.zOrder
+        if (obj.color) this.setColor(obj.color)
+
+        if (obj.blending) this.sprite().blendMode = PIXI.BLEND_MODES.ADD
+        else this.sprite().blendMode = PIXI.BLEND_MODES.NORMAL
+
+        if (obj.opacity) this.sprite().alpha = obj.opacity
     }
 
     sprite() {
         return this.getChildAt(0) as PIXI.Sprite
     }
+
+    setColor(color: string) {
+        this.color = color
+        this.sprite().tint = parseInt(color, 16)
+    }
 }
 
 class TooltipNode extends PIXI.Graphics {
-    constructor(on: ObjectNode) {
+    text: PIXI.Text
+    public zoom: number = 1
+
+    currentObject: ObjectNode | null = null
+
+    constructor() {
         super()
+
+        this.text = new PIXI.Text("", {
+            fontFamily: "Cabin",
+            fontSize: 12,
+            fill: 0xffffff,
+            align: "left",
+        })
+
+        this.text.resolution = 6
+        this.addChild(this.text)
+
+        this.scale.y *= -1
+    }
+
+    unHighlight() {
+        if (this.currentObject) {
+            this.currentObject.getChildByName("highlight")?.destroy()
+        }
+    }
+
+    update(on: ObjectNode) {
+        const padding = 5
+
+        this.x = on.x
+        this.y = on.y
+
+        this.text.style.fontSize = Math.min(
+            Math.max(MIN_ZOOM - this.zoom, 6),
+            20
+        )
+
+        if (this.currentObject != null)
+            this.currentObject.getChildByName("highlight")?.destroy()
+        this.currentObject = on
+        const highlight = new PIXI.Graphics()
+        highlight.name = "highlight"
+        highlight.alpha = 0.5
+        highlight
+            .lineStyle(1 / this.currentObject.scale.y, 0x46f0fc, 1)
+            .drawRect(
+                -on.sprite().width / 2 - 2,
+                -on.sprite().height / 2 - 2,
+                on.sprite().width + 4,
+                on.sprite().height + 4
+            )
+        this.currentObject.addChild(highlight)
 
         get(ref(database, `userPlaced/${on.name}`))
             .then((username) => {
-                let text = new PIXI.Text(username.val(), {
-                    fontSize: 12,
-                    fill: 0xffffff,
-                    align: "left",
-                })
+                this.clear()
 
-                // todo: why text flipped
-                text.scale.y *= -1
-
-                text.resolution = 3
-                text.x -= on.width
-                text.y += on.height + 5
+                this.text.text = `Placed By: ${username.val()}`
 
                 this.beginFill(0x000000, 0.7)
                 this.drawRoundedRect(
-                    text.x - 2.5,
-                    on.height / 2 + 3,
-                    text.width + 5,
-                    text.height + 2,
+                    this.text.x - padding / 2,
+                    this.text.y - padding / 2,
+                    this.text.width + padding,
+                    this.text.height + padding,
                     5
                 )
+
+                this.x -= this.width / 2
+                this.y -= this.height - padding * 2
+
                 this.endFill()
 
-                this.addChild(text)
+                this.visible = true
             })
             .catch((err) => {
                 console.error(err)
@@ -452,28 +541,6 @@ class TooltipNode extends PIXI.Graphics {
             })
     }
 }
-
-// export class ObjectPreviewNode extends PIXI.Container {
-//     constructor(public obj_id: number, layerGroup: PIXI_LAYERS.Group) {
-//         super();
-//         let sprite = new PIXI.Sprite(
-//             PIXI.Texture.from(`gd/objects/main/${obj_id}.png`)
-//         );
-//         sprite.anchor.set(0.5);
-
-//         sprite.scale.set(0.25, -0.25);
-//         // if (obj.flip) {
-//         //     this.scale.x *= -1;
-//         // }
-//         // this.rotation = -(obj.rotation * Math.PI) / 180.0;
-//         // this.position.set(obj.x, obj.y);
-//         this.addChild(sprite);
-//     }
-
-//     sprite() {
-//         return this.getChildAt(0) as PIXI.Sprite;
-//     }
-// }
 
 export class ObjectSelectionRect extends PIXI.Sprite {
     constructor(objNode: ObjectNode) {

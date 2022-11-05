@@ -335,22 +335,34 @@ export const EDIT_BUTTONS = [
         tabName: "Colors",
         buttons: [
             {
-                color: "#ff0000",
+                color: "ff0000",
                 scale: 1.0,
-                cb: (obj: GDObject) => {
-                    obj.colorChannel = 0
-                },
                 shortcut: null,
+                cb: null,
             },
 
             {
-                color: "#00ff00",
+                color: "00ff00",
                 scale: 1.0,
-                cb: (obj: GDObject) => {
-                    obj.colorChannel = 1
-                },
                 shortcut: null,
+                cb: null,
             },
+            { color: "ff4500", scale: 1.0, shortcut: null, cb: null },
+            { color: "ffa800", scale: 1.0, shortcut: null, cb: null },
+            { color: "ffd635", scale: 1.0, shortcut: null, cb: null },
+            { color: "00a368", scale: 1.0, shortcut: null, cb: null },
+            { color: "7eed56", scale: 1.0, shortcut: null, cb: null },
+            { color: "2450a4", scale: 1.0, shortcut: null, cb: null },
+            { color: "3690ea", scale: 1.0, shortcut: null, cb: null },
+            { color: "51e9f4", scale: 1.0, shortcut: null, cb: null },
+            { color: "811e9f", scale: 1.0, shortcut: null, cb: null },
+            { color: "b44ac0", scale: 1.0, shortcut: null, cb: null },
+            { color: "ff99aa", scale: 1.0, shortcut: null, cb: null },
+            { color: "9c6926", scale: 1.0, shortcut: null, cb: null },
+            { color: "000000", scale: 1.0, shortcut: null, cb: null },
+            { color: "898d90", scale: 1.0, shortcut: null, cb: null },
+            { color: "d4d7d9", scale: 1.0, shortcut: null, cb: null },
+            { color: "ffffff", scale: 1.0, shortcut: null, cb: null },
         ],
     },
 ]

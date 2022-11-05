@@ -106,9 +106,8 @@ export class ChunkNode extends PIXI.Container {
         selectableWorldNode.addChild(selectableChunk)
 
         this.addObject = (snapshot) => {
-            // console.log(snapshot.val());
             let obj = GDObject.fromDatabaseString(snapshot.val())
-            let objectNode = new ObjectNode(obj, layerGroup)
+            let objectNode = new ObjectNode(obj, layerGroup, editorNode.tooltip)
             objectNode.name = snapshot.key
 
             this.addChild(objectNode)

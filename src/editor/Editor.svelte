@@ -2,14 +2,14 @@
     import { onMount } from "svelte"
 
     import { vec } from "../utils/vector"
-    import { DRAGGING_THRESHOLD, EditorApp } from "./app"
+    import { DRAGGING_THRESHOLD, EditorApp, storePosState } from "./app"
     import { GDObject, getObjSettings, OBJECT_SETTINGS } from "./object"
     import { EDIT_BUTTONS } from "./edit"
     import { lazyLoad } from "../lazyLoad"
     import { addObjectToLevel } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { toast } from "@zerodevx/svelte-toast"
-    import { toastErrorTheme } from "../const"
+    import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 
     let pixiCanvas: HTMLCanvasElement
     export let pixiApp: EditorApp
@@ -33,8 +33,16 @@
         }
     }
 
+    // get editor position from local storage
+    let editorPosition: any = localStorage.getItem("editorPosition")
+    if (editorPosition) {
+        editorPosition = JSON.parse(editorPosition)
+    } else {
+        editorPosition = { x: 0, y: 0, zoom: 0 }
+    }
+
     onMount(() => {
-        pixiApp = new EditorApp(pixiCanvas)
+        pixiApp = new EditorApp(pixiCanvas, editorPosition)
         switchMenu(EditorMenu.Build)
     })
 
@@ -44,6 +52,11 @@
 
     let placeTimeLeft = 6969696969
     let deleteTimeLeft = 6969696969
+
+    // temporary client-side way of disabling button just to avoid user being able to spam button
+    // in event that cloud function returns slowly
+    let placeButtonDisabled = false
+    let deleteButtonDisabled = false
 
     const timer = 5 * 60
 
@@ -151,8 +164,8 @@
                 let prevZoom = pixiApp.editorNode.zoom()
                 pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
                 pixiApp.editorNode.zoomLevel = Math.min(
-                    24,
-                    Math.max(-4, pixiApp.editorNode.zoomLevel)
+                    MIN_ZOOM,
+                    Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
                 )
                 let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
                 pixiApp.editorNode.cameraPos = wm.plus(
@@ -165,6 +178,9 @@
                 pixiApp.editorNode.cameraPos.y -= e.deltaY
                 pixiApp.editorNode.cameraPos.x += e.deltaX
             }
+
+            // set editor position to local storage
+            storePosState(pixiApp)
         }}
         on:pointerup={(e) => {
             pixiApp.mousePos = vec(e.pageX, e.pageY)
@@ -181,15 +197,28 @@
                         .toWorld(pixiApp.mousePos, pixiApp.canvasSize())
                         .snapped(30)
                         .plus(vec(15, 15))
-                    pixiApp.editorNode.objectPreview = new GDObject(
-                        selectedObject,
-                        snapped.x + settings.offset_x,
-                        snapped.y + settings.offset_y,
-                        0,
-                        false,
-                        1.0,
-                        50
-                    )
+                    if (
+                        pixiApp.editorNode.objectPreview == null ||
+                        selectedObject != pixiApp.editorNode.objectPreview.id
+                    ) {
+                        pixiApp.editorNode.objectPreview = new GDObject(
+                            selectedObject,
+                            snapped.x + settings.offset_x,
+                            snapped.y + settings.offset_y,
+                            0,
+                            false,
+                            1.0,
+                            50,
+                            "ffffff",
+                            false,
+                            1.0
+                        )
+                    } else {
+                        pixiApp.editorNode.objectPreview.x =
+                            snapped.x + settings.offset_x
+                        pixiApp.editorNode.objectPreview.y =
+                            snapped.y + settings.offset_y
+                    }
                     pixiApp.editorNode.updateObjectPreview()
                 }
             }
@@ -323,23 +352,33 @@
                         {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
                             <button
                                 class="edit_button invis_button wiggle_button"
-                                style={pixiApp.editorNode.objectPreview ==
+                                style="{pixiApp.editorNode.objectPreview ==
                                     null ||
-                                (["cw_5", "ccw_5"].includes(
-                                    editButton["image"]
+                                (['cw_5', 'ccw_5'].includes(
+                                    editButton['image']
                                 ) &&
                                     getObjSettings(
                                         pixiApp.editorNode.objectPreview.id
                                     ).solid)
-                                    ? "opacity:0.3;"
-                                    : ""}
+                                    ? 'opacity:0.3;'
+                                    : ''}
+                                {editButton['color'] &&
+                                pixiApp?.editorNode?.objectPreview?.color ==
+                                    editButton['color']
+                                    ? 'outline: 3px solid white;'
+                                    : ''}"
                                 on:click={() => {
                                     if (
                                         pixiApp.editorNode.objectPreview != null
                                     ) {
-                                        editButton.cb(
-                                            pixiApp.editorNode.objectPreview
-                                        )
+                                        if (editButton["color"]) {
+                                            pixiApp.editorNode.objectPreview.color =
+                                                editButton["color"]
+                                        } else
+                                            editButton.cb(
+                                                pixiApp.editorNode.objectPreview
+                                            )
+
                                         pixiApp.editorNode.updateObjectPreview()
                                     }
                                 }}
@@ -355,9 +394,10 @@
                                 {:else if editButton["color"]}
                                     <div
                                         class="color_icon"
-                                        style="background-color: {editButton[
-                                            'color'
-                                        ]};transform: scale({editButton.scale});"
+                                        style="background-color: {'#' +
+                                            editButton['color']};
+                                               transform: scale({editButton.scale});
+                                               "
                                     />
                                 {/if}
                             </button>
@@ -368,6 +408,49 @@
                             <t class="edit_info_text">
                                 Z={pixiApp.editorNode.objectPreview.zOrder}
                             </t>
+                        {:else if currentEditTab == 2}
+                            <button
+                                id="blending_toggle"
+                                style={pixiApp.editorNode.objectPreview
+                                    ?.blending
+                                    ? "border: 2px solid red"
+                                    : ""}
+                                on:click={() => {
+                                    if (
+                                        pixiApp.editorNode.objectPreview != null
+                                    ) {
+                                        pixiApp.editorNode.objectPreview.blending =
+                                            !pixiApp.editorNode.objectPreview
+                                                .blending
+                                        pixiApp.editorNode.updateObjectPreview()
+                                    }
+                                }}
+                            >
+                                Blending
+                            </button>
+                            <!-- opacity slider -->
+                            <div id="opacity_slider_container">
+                                <div class="edit_info_text">Opacity</div>
+                                <input
+                                    type="range"
+                                    min="0.1"
+                                    max="1"
+                                    step="0.01"
+                                    value={pixiApp.editorNode.objectPreview
+                                        ?.opacity}
+                                    class="opacity_slider"
+                                    on:input={(e) => {
+                                        if (
+                                            pixiApp.editorNode.objectPreview !=
+                                            null
+                                        ) {
+                                            pixiApp.editorNode.objectPreview.opacity =
+                                                e.target.value
+                                            pixiApp.editorNode.updateObjectPreview()
+                                        }
+                                    }}
+                                />
+                            </div>
                         {/if}
                     </div>
                 {:else}
@@ -380,8 +463,10 @@
             {#if currentMenu != EditorMenu.Delete}
                 <button
                     class="place_button invis_button wiggle_button"
-                    disabled={placeTimeLeft > 0}
+                    disabled={placeButtonDisabled || placeTimeLeft > 0}
                     on:click={() => {
+                        placeButtonDisabled = true
+
                         if (
                             pixiApp.editorNode.objectPreview &&
                             placeTimeLeft == 0
@@ -393,9 +478,13 @@
                                         `Failed to place object! (${err.message})`,
                                         toastErrorTheme
                                     )
+
+                                    placeButtonDisabled = false
                                 })
                                 .then(() => {
                                     pixiApp.editorNode.removePreview()
+
+                                    placeButtonDisabled = false
                                 })
                         }
                     }}
@@ -424,10 +513,14 @@
             {:else}
                 <button
                     class="delete_button invis_button wiggle_button"
-                    disabled={deleteTimeLeft > 0}
+                    disabled={deleteButtonDisabled || deleteTimeLeft > 0}
                     on:click={() => {
+                        deleteButtonDisabled = true
+
                         if (deleteTimeLeft == 0) {
                             pixiApp.editorNode.deleteSelectedObject()
+
+                            deleteButtonDisabled = false
                         }
                     }}
                 >
@@ -763,6 +856,58 @@
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+
+    #blending_toggle {
+        height: var(--grid-button-size);
+        width: 100%;
+        border-radius: 6px;
+        background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
+        box-shadow: 0 4px 8px 0 #00000070;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        grid-column-start: 1;
+        grid-column-end: 4;
+
+        font-family: Pusab;
+        color: white;
+        font-size: var(--font-medium);
+        -webkit-text-stroke: 2.5px black;
+        justify-self: end;
+    }
+
+    #opacity_slider_container {
+        width: 100%;
+        height: 100%;
+        grid-column-start: 5;
+        grid-column-end: 7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .opacity_slider {
+        background: none;
+        appearance: none;
+    }
+
+    input[type="range"]::-moz-range-track {
+        -moz-appearance: none;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, #00000000 0%, #ffffffff 100%);
+        background-color: none;
+        border-radius: 6px;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, #00000000 0%, #ffffffff 100%);
+        background-color: none;
+        border-radius: 6px;
+        -webkit-appearance: none;
     }
 
     .playbutton {

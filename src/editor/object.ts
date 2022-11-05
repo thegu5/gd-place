@@ -9,13 +9,17 @@ export class GDObject {
         public flip: boolean,
         public scale: number,
         public zOrder: number,
-        public colorChannel: number = 0
+        public color: string,
+        public blending: boolean,
+        public opacity: number
     ) {}
 
     toDatabaseString() {
         return `${this.id};${this.x};${this.y};${this.rotation};${
             this.flip ? 1 : 0
-        };${this.scale};${this.zOrder}`
+        };${this.scale};${this.zOrder};${this.color};${this.blending ? 1 : 0};${
+            this.opacity
+        }`
     }
 
     clone() {
@@ -26,12 +30,27 @@ export class GDObject {
             this.rotation,
             this.flip,
             this.scale,
-            this.zOrder
+            this.zOrder,
+            this.color,
+            this.blending,
+            this.opacity
         )
     }
 
     static fromDatabaseString(s: string) {
-        let [id, x, y, rotation, flip, scale, zOrder] = s.split(";")
+        let [
+            id,
+            x,
+            y,
+            rotation,
+            flip,
+            scale,
+            zOrder,
+            color,
+            blending,
+            opacity,
+        ] = s.split(";")
+        //console.log(color)
         return new GDObject(
             // 🤣
             parseInt(id),
@@ -40,7 +59,10 @@ export class GDObject {
             parseFloat(rotation),
             flip == "1",
             parseFloat(scale),
-            parseInt(zOrder)
+            parseInt(zOrder),
+            color,
+            blending == "1",
+            parseFloat(opacity)
         )
     }
 

@@ -1,3 +1,4 @@
+import { toast } from "@zerodevx/svelte-toast"
 import type { FirebaseApp } from "firebase/app"
 import {
     getAuth,
@@ -16,8 +17,10 @@ import {
 } from "firebase/auth"
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
+
+import { toastErrorTheme } from "../const"
 import { derived, writable, type Writable } from "svelte/store"
-import { auth, database } from "./init"
+import { auth, database, initUserWithUsername } from "./init"
 
 let googleProvider = new GoogleAuthProvider()
 let githubProvider = new GithubAuthProvider()
@@ -43,6 +46,15 @@ export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signOut = () => logOut(auth)
 
 export const initUserData = (uid: string, username: string) => {
+    // get(ref(database, "/userData")).then((a) => {
+    //     console.log(a)
+    // })
+    // initUserWithUsername({ uid, username })
+    //     .then((r) => console.log(r))
+    //     .catch((err) => {
+    //         console.log(err)
+    //         toast.push("Username already taken!", toastErrorTheme)
+    //     })
     set(ref(database, `userData/${uid}`), {
         username,
         lastPlaced: 0,
