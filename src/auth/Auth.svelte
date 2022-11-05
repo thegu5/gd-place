@@ -71,7 +71,7 @@
     let buttonsDisabled = false
 
     let usernameInput = ""
-    $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,15}$/)
+    $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,16}$/)
 </script>
 
 <div class="all">

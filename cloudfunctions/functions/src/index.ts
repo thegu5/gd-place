@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
+import { DataSnapshot } from "@firebase/database-types"
 
 export * from "./gd"
 
@@ -111,48 +112,46 @@ export const initUserWithUsername = functions.https.onCall(
     async (data, request) => {
         //functions.logger.info(request.auth)
 
-        // this time if the user is already authenticated we block it cause that means they already have a username
-        // if (request.auth) {
-        //     throw new functions.https.HttpsError(
-        //         "already-exists",
-        //         "User is already authenticated"
-        //     )
-        // }
+        if (!request.auth) {
+            throw new functions.https.HttpsError(
+                "unauthenticated",
+                "User is not authenticated"
+            )
+        }
 
         const db = admin.database()
 
         let allUsers = db.ref(`/userData/`)
-
         let snapshot = await allUsers.once("value")
 
+        let promises: Promise<DataSnapshot>[] = []
+
         snapshot.forEach((child) => {
-            ;(async () => {
-                const usernames = []
+            //const usernames = []
 
-                usernames.push(
-                    await db.ref(`/userData/${child.key}/username`).get()
-                )
+            promises.push(db.ref(`/userData/${child.key}/username`).get())
 
-                if (usernames.indexOf(data.username) === -1) {
-                    throw new functions.https.HttpsError(
-                        "already-exists",
-                        "Username already taken"
-                    )
-                }
-
-                // db.ref(`/userData/${child.key}/username`)
-                //     .Promise.all(promises)
-                //     .then((usernames) => {
-                //         usernames.forEach((username) => {
-                //             if (username.val() === data.username) {
-                // throw new functions.https.HttpsError(
-                //     "already-exists",
-                //     "Username already taken"
-                // )
-                //             }
-                //         })
-                //     })
-            })()
+            // db.ref(`/userData/${child.key}/username`)
+            //     .Promise.all(promises)
+            //     .then((usernames) => {
+            //         usernames.forEach((username) => {
+            //             if (username.val() === data.username) {
+            // throw new functions.https.HttpsError(
+            //     "already-exists",
+            //     "Username already taken"
+            // )
+            //             }
+            //         })
+            //     })
         })
+
+        let usernames = await Promise.all(promises)
+
+        if (usernames.map((u) => u.val()).indexOf(data.username) !== -1) {
+            throw new functions.https.HttpsError(
+                "already-exists",
+                "Username already taken"
+            )
+        }
     }
 )

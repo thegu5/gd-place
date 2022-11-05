@@ -46,20 +46,18 @@ export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signOut = () => logOut(auth)
 
 export const initUserData = (uid: string, username: string) => {
-    // get(ref(database, "/userData")).then((a) => {
-    //     console.log(a)
-    // })
-    // initUserWithUsername({ uid, username })
-    //     .then((r) => console.log(r))
-    //     .catch((err) => {
-    //         console.log(err)
-    //         toast.push("Username already taken!", toastErrorTheme)
-    //     })
-    set(ref(database, `userData/${uid}`), {
-        username,
-        lastPlaced: 0,
-        lastDeleted: 0,
-    })
+    initUserWithUsername({ uid, username })
+        .then(() => {
+            set(ref(database, `userData/${uid}`), {
+                username,
+                lastPlaced: 0,
+                lastDeleted: 0,
+            })
+        })
+        .catch((err) => {
+            console.log(err)
+            toast.push("Username already taken!", toastErrorTheme)
+        })
 }
 
 export const canEdit = derived(
