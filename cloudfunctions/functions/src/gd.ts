@@ -1,4 +1,5 @@
 import * as functions from "firebase-functions"
+import * as admin from "firebase-admin"
 
 import fetch from "node-fetch"
 import * as crypto from "crypto"
@@ -38,6 +39,10 @@ class Code {
 
     is(code: number): boolean {
         return this.code === code
+    }
+
+    expires(): number {
+        return this.expirary.getMilliseconds()
     }
 
     constructor() {
@@ -120,12 +125,8 @@ const getAccountId = (username: string): Promise<number> => {
     })
 }
 
-const currentUsers: Map<number, User> = new Map()
-
-const sendMessageImpl = (uid: number): Promise<void> => {
-    functions.logger.info(`Sending verification code to user: \`${uid}\`.`)
-    let user = new User(uid)
-    currentUsers.set(uid, user)
+const sendMessageImpl = (user: User): Promise<void> => {
+    functions.logger.info(`Sending verification code to user: \`${user.uid}\`.`)
 
     return new Promise(() => {
         fetch(`${DATABASE}/uploadGJMessage20.php`, {
@@ -133,7 +134,7 @@ const sendMessageImpl = (uid: number): Promise<void> => {
             body: new URLSearchParams({
                 accountID: "22426057",
                 gjp: b64(xor(process.env.GD_ACC_PWD || "", ACC_PWD_XOR_KEY)),
-                toAccountID: uid.toString(),
+                toAccountID: user.uid.toString(),
                 subject: b64("Verify Account"),
                 body: b64(
                     xor(
@@ -152,7 +153,7 @@ const sendMessageImpl = (uid: number): Promise<void> => {
                 resp.text().then((ok) => {
                     if (ok === "-1") {
                         functions.logger.error(
-                            `Failed to message user: \`${uid}\``
+                            `Failed to message user: \`${user.uid}\``
                         )
 
                         throw new functions.https.HttpsError(
@@ -173,32 +174,58 @@ const sendMessageImpl = (uid: number): Promise<void> => {
     })
 }
 
-export const sendMessage = functions.https.onCall(async (data) => {
+export const sendMessage = functions.https.onCall(async (data, request) => {
+    if (request.auth) {
+        throw new functions.https.HttpsError(
+            "already-exists",
+            "User is already authenticated"
+        )
+    }
+
+    const db = admin.database()
+
     let id: number = await getAccountId(data.username)
 
-    return await sendMessageImpl(id)
+    let user = new User(id)
+
+    db.ref(`/loginCodes/${user.uid}`).set({
+        code: user.code.code,
+        expires: user.code.expires(),
+    })
+
+    return await sendMessageImpl(user)
 })
 
-export const verifyCode = functions.https.onCall(async (data) => {
-    let user = currentUsers.get(data.uid)
+export const verifyCode = functions.https.onCall(async (data, request) => {
+    if (request.auth) {
+        throw new functions.https.HttpsError(
+            "already-exists",
+            "User is already authenticated"
+        )
+    }
+
+    const db = admin.database()
+
+    let user_ref = db.ref(`/loginCodes/${data.uid}`)
+    let user = await (await user_ref.get()).val()
 
     if (!user) {
         throw new functions.https.HttpsError("not-found", ERRORS.FAILED_USER)
     }
 
-    if (user.code.hasExpired()) {
+    if (Date.now() > user.code) {
         throw new functions.https.HttpsError(
             "deadline-exceeded",
             ERRORS.CODE_EXPIRED
         )
     }
 
-    if (!user.code.is(data.code)) {
+    if (user.code != data.code) {
         throw new functions.https.HttpsError(
             "permission-denied",
             ERRORS.INVALID_CODE
         )
     }
 
-    currentUsers.delete(data.uid)
+    user_ref.remove()
 })

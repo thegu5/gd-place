@@ -110,8 +110,6 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
 export const initUserWithUsername = functions.https.onCall(
     async (data, request) => {
-        //functions.logger.info(request.auth)
-
         if (!request.auth) {
             throw new functions.https.HttpsError(
                 "unauthenticated",

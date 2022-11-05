@@ -348,66 +348,72 @@
                         {/each}
                     </div>
                     <div class="objects_grid">
-                        {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
-                            <button
-                                class="edit_button invis_button wiggle_button"
-                                style="{pixiApp.editorNode.objectPreview ==
-                                    null ||
-                                (['cw_5', 'ccw_5'].includes(
-                                    editButton['image']
-                                ) &&
-                                    getObjSettings(
-                                        pixiApp.editorNode.objectPreview.id
-                                    ).solid)
-                                    ? 'opacity:0.3;'
-                                    : ''}
-                                {editButton['color'] &&
-                                pixiApp?.editorNode?.objectPreview?.color ==
-                                    editButton['color']
-                                    ? 'outline: 3px solid white;'
-                                    : ''}"
-                                on:click={() => {
-                                    if (
-                                        pixiApp.editorNode.objectPreview != null
-                                    ) {
-                                        if (editButton["color"]) {
-                                            pixiApp.editorNode.objectPreview.color =
-                                                editButton["color"]
-                                        } else
-                                            editButton.cb(
-                                                pixiApp.editorNode.objectPreview
-                                            )
-
-                                        pixiApp.editorNode.updateObjectPreview()
-                                    }
-                                }}
-                            >
-                                {#if editButton["image"]}
-                                    <img
-                                        draggable="false"
-                                        style="transform: scale({editButton.scale})"
-                                        class="button_icon"
-                                        alt=""
-                                        use:lazyLoad={`gd/editor/edit/${editButton["image"]}.png`}
-                                    />
-                                {:else if editButton["color"]}
-                                    <div
-                                        class="color_icon"
-                                        style="background-color: {'#' +
-                                            editButton['color']};
-                                               transform: scale({editButton.scale});
-                                               "
-                                    />
-                                {/if}
-                            </button>
-                        {/each}
+                        <!-- {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
+                            
+                        {/each} -->
 
                         <!-- extra buttons -->
                         {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
                             <t class="edit_info_text">
-                                Z={pixiApp.editorNode.objectPreview.zOrder}
+                                Z = {pixiApp.editorNode.objectPreview.zOrder}
                             </t>
                         {:else if currentEditTab == 2}
+                            {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
+                                <button
+                                    class="edit_button invis_button wiggle_button"
+                                    style="{pixiApp.editorNode.objectPreview ==
+                                        null ||
+                                    (['cw_5', 'ccw_5'].includes(
+                                        editButton['image']
+                                    ) &&
+                                        getObjSettings(
+                                            pixiApp.editorNode.objectPreview.id
+                                        ).solid)
+                                        ? 'opacity:0.3;'
+                                        : ''}
+                            {editButton['color'] &&
+                                    pixiApp?.editorNode?.objectPreview?.color ==
+                                        editButton['color']
+                                        ? 'outline: 3px solid white;'
+                                        : ''}"
+                                    on:click={() => {
+                                        if (
+                                            pixiApp.editorNode.objectPreview !=
+                                            null
+                                        ) {
+                                            if (editButton["color"]) {
+                                                pixiApp.editorNode.objectPreview.color =
+                                                    editButton["color"]
+                                            } else
+                                                editButton.cb(
+                                                    pixiApp.editorNode
+                                                        .objectPreview
+                                                )
+
+                                            pixiApp.editorNode.updateObjectPreview()
+                                        }
+                                    }}
+                                >
+                                    {#if editButton["image"]}
+                                        <img
+                                            draggable="false"
+                                            style="transform: scale({editButton.scale})"
+                                            class="button_icon"
+                                            alt=""
+                                            use:lazyLoad={`gd/editor/edit/${editButton["image"]}.png`}
+                                        />
+                                    {:else if editButton["color"]}
+                                        <div
+                                            class="color_icon"
+                                            style="background-color: {'#' +
+                                                editButton['color']};
+                                           transform: scale({editButton.scale});
+                                           "
+                                        />
+                                    {/if}
+                                </button>
+                            {/each}
+
                             <div class="blending_opacity_container">
                                 <button
                                     class="blending_toggle wiggle_button"
@@ -770,6 +776,9 @@
         display: flex;
         justify-content: center;
         align-items: center;
+
+        grid-column-start: 1;
+        grid-column-end: 3;
     }
 
     .objects_grid {

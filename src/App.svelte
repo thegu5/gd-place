@@ -2,11 +2,8 @@
     import { SvelteToast } from "@zerodevx/svelte-toast"
 
     import Auth from "./auth/Auth.svelte"
-    import Countdown from "./Countdown.svelte"
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
-
-    import { sendMessage, verifyCode } from "./firebase/init"
 </script>
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
