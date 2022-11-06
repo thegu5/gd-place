@@ -12,6 +12,7 @@
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^1.0.2",
         "@tsconfig/svelte": "^3.0.0",
+        "@types/uuid": "^8.3.4",
         "svelte": "^3.49.0",
         "svelte-check": "^2.8.1",
         "svelte-preprocess": "^4.10.7",
@@ -29,8 +30,10 @@
         "iter-tools": "^7.5.0",
         "node-fetch": "^3.2.10",
         "pixi.js": "^6.5.8",
+        "svelte-gestures": "^1.4.1",
         "svelte-skeleton": "^1.3.1",
         "svelte-toast": "^1.0.0",
+        "uuid": "^9.0.0",
         "vite-plugin-full-reload": "^1.0.4"
     }
 }

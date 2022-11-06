@@ -14,6 +14,9 @@ import {
     signInWithCredential,
     AuthCredential,
     signInWithCustomToken,
+    EmailAuthCredential,
+    EmailAuthProvider,
+    type AuthProvider,
 } from "firebase/auth"
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
@@ -42,6 +45,7 @@ export const currentUserData: Writable<UserData | null | string> =
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
+export const signInGD = (token) => signInWithCustomToken(auth, token)
 
 export const signOut = () => logOut(auth)
 

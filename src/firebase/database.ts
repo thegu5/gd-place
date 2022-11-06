@@ -76,7 +76,7 @@ export class ChunkNode extends PIXI.Container {
     public lastTimeVisible: number = 0
     public loaded: boolean = false
 
-    marker: PIXI.Graphics = null
+    //marker: PIXI.Graphics = null
 
     constructor(
         x: number,
@@ -95,11 +95,11 @@ export class ChunkNode extends PIXI.Container {
         this.visible = false
 
         // draw box
-        this.marker = new PIXI.Graphics()
-        this.marker.lineStyle(1, 0xffffff, 1)
-        this.marker.drawRect(x, y, CHUNK_SIZE.x, CHUNK_SIZE.y)
+        // this.marker = new PIXI.Graphics()
+        // this.marker.lineStyle(1, 0xffffff, 1)
+        // this.marker.drawRect(x, y, CHUNK_SIZE.x, CHUNK_SIZE.y)
 
-        this.addChild(this.marker)
+        // this.addChild(this.marker)
 
         let selectableChunk = new PIXI.Container()
         selectableChunk.name = chunkName
@@ -186,13 +186,13 @@ export class ChunkNode extends PIXI.Container {
             )
 
             this.loaded = true
-            this.marker.tint = 0x00ff00
+            //this.marker.tint = 0x00ff00
 
             this.unload = () => {
                 unsub1()
                 unsub2()
                 this.loaded = false
-                this.marker.tint = 0xff0000
+                //this.marker.tint = 0xff0000
             }
         }
     }

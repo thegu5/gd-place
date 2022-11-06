@@ -1,9 +1,8 @@
 import { clamp } from "../utils/math"
 
 export const COLOR_CHANGES = [
-    { bg: [0.1, 0.1, 0.1], ground: [0, 0, 0], time: 0, fade: 0 },
-    { bg: [0.5, 0.0, 0.0], ground: [0.8, 0.1, 0.0], time: 0, fade: 0.5 },
-    { bg: [0, 0, 0.3], ground: [0.7, 0, 0.7], time: 10, fade: 0.5 },
+    { bg: [0.0, 0.0, 0.0], ground: [0.1, 0.1, 0.1], time: 0, fade: 0.0 },
+    { bg: hexToRgb("291663"), ground: hexToRgb("1B0E41"), time: 0, fade: 0.5 },
 ]
 
 export function getColors(time: number) {
@@ -37,4 +36,13 @@ export function getColors(time: number) {
     //console.log(index)
 
     return { bg, ground }
+}
+
+function hexToRgb(hex: string) {
+    const bigint = parseInt(hex, 16)
+    const r = (bigint >> 16) & 255
+    const g = (bigint >> 8) & 255
+    const b = bigint & 255
+
+    return [r / 255, g / 255, b / 255]
 }

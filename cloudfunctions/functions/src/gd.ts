@@ -1,9 +1,11 @@
 import * as functions from "firebase-functions"
-import * as admin from "firebase-admin"
+import { getAuth } from "firebase-admin/auth"
+import { getDatabase } from "firebase-admin/database"
 
 import fetch from "node-fetch"
 import * as crypto from "crypto"
 import { cycle, zip } from "iter-tools"
+import { v4 as uuidv4 } from "uuid"
 
 const BOOMLINGS = "https://www.boomlings.com/"
 const DATABASE = `${BOOMLINGS}/database`
@@ -27,22 +29,14 @@ class Code {
     expirary: Date
 
     // expires after 5 minutes
-    static readonly EXP = 300
+    static readonly EXP = 300000
 
     private static getNewUnusedCode = (): number => {
         return crypto.randomInt(100000, 999999)
     }
 
-    hasExpired(): boolean {
-        return Date.now() > this.expirary.getTime()
-    }
-
-    is(code: number): boolean {
-        return this.code === code
-    }
-
     expires(): number {
-        return this.expirary.getMilliseconds()
+        return this.expirary.getTime()
     }
 
     constructor() {
@@ -125,10 +119,10 @@ const getAccountId = (username: string): Promise<number> => {
     })
 }
 
-const sendMessageImpl = (user: User): Promise<void> => {
+const sendMessageImpl = (user: User): Promise<null> => {
     functions.logger.info(`Sending verification code to user: \`${user.uid}\`.`)
 
-    return new Promise(() => {
+    return new Promise((res) => {
         fetch(`${DATABASE}/uploadGJMessage20.php`, {
             method: "POST",
             body: new URLSearchParams({
@@ -150,18 +144,24 @@ const sendMessageImpl = (user: User): Promise<void> => {
             },
         })
             .then((resp) => {
-                resp.text().then((ok) => {
-                    if (ok === "-1") {
-                        functions.logger.error(
-                            `Failed to message user: \`${user.uid}\``
-                        )
+                resp.text()
+                    .then((ok) => {
+                        if (ok === "-1") {
+                            functions.logger.error(
+                                `Failed to message user: \`${user.uid}\``
+                            )
 
-                        throw new functions.https.HttpsError(
-                            "not-found",
-                            ERRORS.FAILED_MESSAGE
-                        )
-                    }
-                })
+                            throw new functions.https.HttpsError(
+                                "not-found",
+                                ERRORS.FAILED_MESSAGE
+                            )
+                        }
+
+                        res(null)
+                    })
+                    .catch((err) => {
+                        throw new functions.https.HttpsError("unknown", err)
+                    })
             })
             .catch((err) => {
                 functions.logger.error(err)
@@ -182,18 +182,20 @@ export const sendMessage = functions.https.onCall(async (data, request) => {
         )
     }
 
-    const db = admin.database()
+    const db = getDatabase()
 
-    let id: number = await getAccountId(data.username)
+    let uid: number = await getAccountId(data.username)
 
-    let user = new User(id)
+    let user = new User(uid)
 
     db.ref(`/loginCodes/${user.uid}`).set({
         code: user.code.code,
         expires: user.code.expires(),
     })
 
-    return await sendMessageImpl(user)
+    await sendMessageImpl(user)
+
+    return uid
 })
 
 export const verifyCode = functions.https.onCall(async (data, request) => {
@@ -204,7 +206,7 @@ export const verifyCode = functions.https.onCall(async (data, request) => {
         )
     }
 
-    const db = admin.database()
+    const db = getDatabase()
 
     let user_ref = db.ref(`/loginCodes/${data.uid}`)
     let user = await (await user_ref.get()).val()
@@ -213,7 +215,7 @@ export const verifyCode = functions.https.onCall(async (data, request) => {
         throw new functions.https.HttpsError("not-found", ERRORS.FAILED_USER)
     }
 
-    if (Date.now() > user.code) {
+    if (Date.now() > user.expires) {
         throw new functions.https.HttpsError(
             "deadline-exceeded",
             ERRORS.CODE_EXPIRED
@@ -228,4 +230,10 @@ export const verifyCode = functions.https.onCall(async (data, request) => {
     }
 
     user_ref.remove()
+
+    let token = await getAuth().createCustomToken(uuidv4(), {
+        gdUid: user.uid,
+    })
+
+    return token
 })

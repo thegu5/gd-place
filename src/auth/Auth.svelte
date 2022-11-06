@@ -1,15 +1,17 @@
 <script lang="ts">
     import { toast } from "@zerodevx/svelte-toast"
-    import { toastErrorTheme, toastSuccessTheme } from "../const"
-
     import {
         canEdit,
         initUserData,
+        signInGD,
         signInGithub,
         signInGoogle,
         signOut,
         type UserData,
     } from "../firebase/auth"
+
+    import { toastErrorTheme, toastSuccessTheme } from "../const"
+    import { sendMessage, verifyCode } from "../firebase/init"
 
     export let loadedUserData: UserData | null
 
@@ -62,16 +64,30 @@
         {
             image: "gd.png",
             name: "GD",
-            cb: () => {},
+            cb: () => {
+                gdUsernamePopupVisible = true
+                loginPopupVisible = false
+            },
         },
     ]
 
     let loginPopupVisible = false
 
+    let gdUsernamePopupVisible = false
+    let gdCodePopupVisible = false
+
     let buttonsDisabled = false
+
+    let uid
 
     let usernameInput = ""
     $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,16}$/)
+
+    let gdUsername = ""
+    $: validGdUsername = gdUsername.match(/^[A-Za-z0-9 ]{3,15}$/)
+
+    let gdCode = ""
+    $: validGdCode = gdCode.match(/^[0-9]{6}$/)
 </script>
 
 <div class="all">
@@ -153,13 +169,13 @@
                         bind:value={usernameInput}
                         class="username_input"
                         type="text"
-                        required
                     />
                     <button
                         disabled={!validUsername}
                         style:opacity={validUsername ? "1" : "0.25"}
                         class="checkmark_button invis_button wiggle_button"
                         on:click={() => {
+                            buttonsDisabled = true
                             initUserData(loadedUserData.user.uid, usernameInput)
                         }}
                     >
@@ -172,6 +188,130 @@
                     </button>
                 </div>
             {/if}
+        </div>
+    {/if}
+
+    {#if gdUsernamePopupVisible && !gdCodePopupVisible}
+        <div class="login_popup_container">
+            <button
+                class="back_button invis_button wiggle_button blur_bg"
+                on:click={() => {
+                    loginPopupVisible = true
+                    gdUsernamePopupVisible = false
+                    buttonsDisabled = false
+                }}
+            >
+                <img draggable="false" src="login/back.svg" alt="back arrow" />
+            </button>
+
+            <div class="username_form">
+                Enter your Geometry Dash username: <input
+                    bind:value={gdUsername}
+                    class="username_input"
+                    type="text"
+                />
+                <button
+                    disabled={!validGdUsername || buttonsDisabled}
+                    style:opacity={validGdUsername && !buttonsDisabled
+                        ? "1"
+                        : "0.25"}
+                    class="checkmark_button invis_button wiggle_button"
+                    on:click={() => {
+                        buttonsDisabled = true
+
+                        sendMessage({ username: gdUsername })
+                            .then((r) => {
+                                uid = r.data
+
+                                gdCodePopupVisible = true
+                                gdUsernamePopupVisible = false
+                                buttonsDisabled = false
+                            })
+                            .catch((e) => {
+                                console.error(e)
+                                toast.push(
+                                    `Error sending verification code! (${e.message})`,
+                                    toastErrorTheme
+                                )
+
+                                buttonsDisabled = false
+                            })
+                    }}
+                >
+                    <img
+                        draggable="false"
+                        src="login/check.png"
+                        alt="checkmark"
+                        width="50px"
+                    />
+                </button>
+            </div>
+        </div>
+    {/if}
+
+    {#if gdCodePopupVisible && !gdUsernamePopupVisible}
+        <div class="login_popup_container">
+            <button
+                class="back_button invis_button wiggle_button blur_bg"
+                on:click={() => {
+                    loginPopupVisible = false
+                    gdCodePopupVisible = false
+                    buttonsDisabled = false
+                    loginPopupVisible = true
+                }}
+            >
+                <img draggable="false" src="login/back.svg" alt="back arrow" />
+            </button>
+
+            <div class="username_form">
+                Enter the verification code: <input
+                    bind:value={gdCode}
+                    class="username_input"
+                    type="text"
+                />
+                <button
+                    disabled={!validGdCode || buttonsDisabled}
+                    style:opacity={validGdCode && !buttonsDisabled
+                        ? "1"
+                        : "0.25"}
+                    class="checkmark_button invis_button wiggle_button"
+                    on:click={() => {
+                        buttonsDisabled = true
+
+                        verifyCode({ uid, code: gdCode })
+                            .then((t) => {
+                                signInGD(t)
+                                    .then(() => {
+                                        gdCodePopupVisible = false
+                                        gdUsernamePopupVisible = false
+                                        buttonsDisabled = false
+                                    })
+                                    .catch((err) => {
+                                        console.error(err)
+                                        toast.push(
+                                            `${err.message}`,
+                                            toastErrorTheme
+                                        )
+
+                                        buttonsDisabled = false
+                                    })
+                            })
+                            .catch((err) => {
+                                console.error(err)
+                                toast.push(`${err.message}`, toastErrorTheme)
+
+                                buttonsDisabled = false
+                            })
+                    }}
+                >
+                    <img
+                        draggable="false"
+                        src="login/check.png"
+                        alt="checkmark"
+                        width="50px"
+                    />
+                </button>
+            </div>
         </div>
     {/if}
 </div>
@@ -276,6 +416,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        z-index: 1;
     }
     .username_form {
         width: 100%;

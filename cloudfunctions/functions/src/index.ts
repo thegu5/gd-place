@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
-import { DataSnapshot } from "@firebase/database-types"
+//import { DataSnapshot } from "@firebase/database-types"
 
 export * from "./gd"
 
@@ -11,19 +11,6 @@ export * from "./gd"
 const CHUNK_SIZE = { x: 20 * 30, y: 20 * 30 }
 
 admin.initializeApp()
-
-// Start writing Firebase Functions
-// https://firebase.google.com/docs/functions/typescript
-
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//     functions.logger.info("Hello logs!", { structuredData: true })
-//     response.send("Hello from Firebase!")
-// })
-
-// export const onObjectPlaced = functions.database.ref("/chunks/{chunkId}/{objectId}").onCreate((snapshot, context) => {
-//     const chunkId = context.params.chunkId
-//     const objectId = context.params.objectId
-// })
 
 export const placeObject = functions.https.onCall(async (data, request) => {
     // check that user is authenticated
@@ -61,7 +48,11 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let key = await ref.push(object)
 
     // reset timer
-    if (uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3")
+    if (
+        uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3" &&
+        uid != "R2C8U5ct2rZNif2iaa2CFwhIptA3" &&
+        uid != "bihWD9f3LpWj9Nkf4plcsCEDymZ2"
+    )
         // :mabbog:
         await lastPlacedRef.set(now)
 
@@ -101,7 +92,11 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     ref.remove()
 
     // reset timer
-    if (uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3")
+    if (
+        uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3" &&
+        uid != "R2C8U5ct2rZNif2iaa2CFwhIptA3" &&
+        uid != "bihWD9f3LpWj9Nkf4plcsCEDymZ2"
+    )
         // :mabbog:
         await lastDeletedRef.set(now)
 
@@ -117,31 +112,36 @@ export const initUserWithUsername = functions.https.onCall(
             )
         }
 
+        if (!data.username.match(/^[A-Za-z0-9_-]{3,16}$/)) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                "Username is invalid"
+            )
+        }
+
         const db = admin.database()
 
-        let allUsers = db.ref(`/userData/`)
-        let snapshot = await allUsers.once("value")
+        // check if /userName/$username exists
 
-        let promises: Promise<DataSnapshot>[] = []
-
-        snapshot.forEach((child) => {
-            promises.push(db.ref(`/userData/${child.key}/username`).get())
-        })
-
-        let usernames = await Promise.all(promises)
-
-        if (usernames.map((u) => u.val()).indexOf(data.username) !== -1) {
+        const usernameRef = db.ref(`/userName/${data.username.toLowerCase()}`)
+        const username = (await usernameRef.once("value")).val()
+        functions.logger.log(`user ${username}`)
+        if (username != null) {
             throw new functions.https.HttpsError(
                 "already-exists",
-                "Username already taken"
+                "Username already exists"
             )
         }
 
         // make new user
         db.ref(`/userData/${data.uid}`).set({
-            username: data.username,
+            username: data.username.toLowerCase(),
             lastPlaced: 0,
             lastDeleted: 0,
+        })
+
+        db.ref(`/userName/${data.username.toLowerCase()}`).set({
+            uid: data.uid,
         })
     }
 )

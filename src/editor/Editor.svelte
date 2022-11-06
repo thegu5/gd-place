@@ -3,6 +3,8 @@
 
     import { vec } from "../utils/vector"
     import { DRAGGING_THRESHOLD, EditorApp, storePosState } from "./app"
+
+    import { pinch } from "svelte-gestures"
     import {
         GdColor,
         GDObject,
@@ -182,6 +184,26 @@
                 pixiApp.editorNode.cameraPos.y -= e.deltaY
                 pixiApp.editorNode.cameraPos.x += e.deltaX
             }
+
+            // set editor position to local storage
+            storePosState(pixiApp)
+        }}
+        on:pinch={(e) => {
+            e.preventDefault()
+            let wm = pixiApp.editorNode.toWorld(
+                vec(e.detail.center.x, e.detail.center.y),
+                pixiApp.canvasSize()
+            )
+            let prevZoom = pixiApp.editorNode.zoom()
+            pixiApp.editorNode.zoomLevel += e.detail.scale
+            pixiApp.editorNode.zoomLevel = Math.min(
+                MIN_ZOOM,
+                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+            )
+            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+            pixiApp.editorNode.cameraPos = wm.plus(
+                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            )
 
             // set editor position to local storage
             storePosState(pixiApp)
@@ -392,11 +414,14 @@
                             <t class="edit_info_text">
                                 Z = {pixiApp.editorNode.objectPreview.zOrder}
                             </t>
-                        {:else if currentEditTab == 2}
+                        {/if}
+
+                        {#if currentEditTab == 2}
                             {#each ["Main", "Detail"] as channel}
                                 <div class="color_header">
                                     {channel}
                                 </div>
+
                                 {#each PALETTE as color}
                                     <button
                                         class="edit_button invis_button wiggle_button"
@@ -464,9 +489,9 @@
                                         </div>
                                         <input
                                             type="range"
-                                            min="0.1"
+                                            min="0.2"
                                             max="1"
-                                            step="0.01"
+                                            step="0.2"
                                             value={channel == "Main"
                                                 ? pixiApp.editorNode
                                                       .objectPreview?.mainColor
@@ -829,6 +854,7 @@
         padding: var(--grid-gap);
         gap: 16px;
         overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .delete_menu {
@@ -839,7 +865,7 @@
         align-items: center;
         font-family: Pusab;
         color: white;
-        font-size: var(--font-small);
+        font-size: var(--font-large);
         grid-area: container;
         -webkit-text-stroke: 1px black;
     }
@@ -921,9 +947,9 @@
         display: flex;
         gap: 8px;
         justify-content: center;
-        width: 100%;
+        width: auto;
         grid-column-end: 8;
-        grid-column-start: 1;
+        grid-column-start: 2;
 
         font-family: Pusab;
         -webkit-text-stroke: 1.5px black;

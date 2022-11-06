@@ -14,13 +14,3 @@
 {:else}
     <h1><pre>loading</pre></h1>
 {/if}
-<!-- <Countdown /> -->
-<!-- 
-<button
-    style="position: absolute"
-    on:click={() => {
-        verifyCode({ uid: 782044, code: 123456 })
-            .then((r) => console.log(r))
-            .catch((e) => console.error(e))
-    }}>verify</button
-> -->
