@@ -33,7 +33,7 @@ export class GDObject {
     ) {}
 
     toDatabaseString() {
-        return `${this.id};${this.x};${this.y};${this.rotation};${
+        return `${this.id};${this.x};${this.y};${Math.round(this.rotation)};${
             this.flip ? 1 : 0
         };${this.scale};${
             this.zOrder
@@ -76,7 +76,7 @@ export class GDObject {
             parseInt(id),
             parseFloat(x),
             parseFloat(y),
-            parseFloat(rotation),
+            parseInt(rotation),
             flip == "1",
             parseFloat(scale),
             parseInt(zOrder),

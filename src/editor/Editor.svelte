@@ -65,7 +65,7 @@
     let placeButtonDisabled = false
     let deleteButtonDisabled = false
 
-    const timer = 5 * 60
+    const timer = 2 * 60
 
     const updateTimeLeft = () => {
         const now = Date.now()
@@ -100,7 +100,7 @@
 
 <svelte:window
     on:pointerup={(e) => {
-        console.log("z", fartcock.includes(e))
+        //console.log("z", fartcock.includes(e))
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
@@ -363,16 +363,14 @@
                         {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
                             <button
                                 class="edit_button invis_button wiggle_button"
-                                style={pixiApp.editorNode.objectPreview ==
+                                disabled={pixiApp.editorNode.objectPreview ==
                                     null ||
-                                (["cw_5", "ccw_5"].includes(
-                                    editButton["image"]
-                                ) &&
-                                    getObjSettings(
-                                        pixiApp.editorNode.objectPreview.id
-                                    ).solid)
-                                    ? "opacity:0.3;"
-                                    : ""}
+                                    (["cw_5", "ccw_5"].includes(
+                                        editButton["image"]
+                                    ) &&
+                                        getObjSettings(
+                                            pixiApp.editorNode.objectPreview.id
+                                        ).solid)}
                                 on:click={() => {
                                     if (
                                         pixiApp.editorNode.objectPreview != null
@@ -411,6 +409,16 @@
                                 {#each PALETTE as color}
                                     <button
                                         class="edit_button invis_button wiggle_button"
+                                        disabled={pixiApp.editorNode
+                                            .objectPreview == null ||
+                                            (channel == "Main" &&
+                                                pixiApp.editorNode.objectPreview
+                                                    ?.mainColor.blending &&
+                                                color == "000000") ||
+                                            (channel == "Detail" &&
+                                                pixiApp.editorNode.objectPreview
+                                                    ?.detailColor.blending &&
+                                                color == "000000")}
                                         on:click={() => {
                                             if (
                                                 pixiApp.editorNode
@@ -446,6 +454,16 @@
                                                 ?.detailColor.blending)
                                             ? "border: 2px solid red"
                                             : ""}
+                                        disabled={pixiApp.editorNode
+                                            .objectPreview == null ||
+                                            (channel == "Main" &&
+                                                pixiApp.editorNode.objectPreview
+                                                    ?.mainColor.hex ==
+                                                    "000000") ||
+                                            (channel == "Detail" &&
+                                                pixiApp.editorNode.objectPreview
+                                                    ?.detailColor.hex ==
+                                                    "000000")}
                                         on:click={() => {
                                             if (
                                                 pixiApp.editorNode
@@ -486,6 +504,8 @@
                                                       .objectPreview
                                                       ?.detailColor.opacity}
                                             class="opacity_slider"
+                                            disabled={pixiApp?.editorNode
+                                                ?.objectPreview == null}
                                             on:input={(e) => {
                                                 if (
                                                     pixiApp.editorNode
@@ -688,6 +708,12 @@
         }
     }
 
+    * {
+        -webkit-user-drag: none;
+        -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+        -webkit-overflow-scrolling: touch;
+    }
+
     .editor {
         width: 100vw;
         height: 100vh;
@@ -730,7 +756,7 @@
         padding: var(--font-large);
         justify-content: center;
         align-items: center;
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         color: white;
         font-size: calc(var(--font-large) - 6px);
         backdrop-filter: blur(24px);
@@ -809,14 +835,14 @@
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
         backdrop-filter: blur(30px);
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
         color: white;
         font-size: var(--font-small);
     }
 
     .edit_info_text {
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
         color: white;
         font-size: var(--font-medium);
@@ -849,10 +875,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         color: white;
         font-size: var(--font-large);
         grid-area: container;
+        text-align: center;
         -webkit-text-stroke: 1px black;
     }
 
@@ -863,7 +890,7 @@
         border-radius: 18px;
         box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset,
             4px 4px 0 8px #c6f249 inset, -4px -4px 0 8px #49851b inset;
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         color: white;
         font-size: var(--font-large);
         -webkit-text-stroke: 2.5px black;
@@ -882,7 +909,7 @@
         border-radius: 18px;
         box-shadow: 0 0 0 4px white inset, 0 0 0 8px black inset,
             4px 4px 0 8px #f24980 inset, -4px -4px 0 8px #851b1d inset;
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         color: white;
         font-size: var(--font-large);
         -webkit-text-stroke: 2.5px black;
@@ -920,6 +947,10 @@
         align-items: center;
     }
 
+    .edit_button:disabled {
+        opacity: 0.3;
+    }
+
     .blending_opacity_container {
         display: flex;
         gap: 8px;
@@ -937,7 +968,7 @@
         grid-column-end: 8;
         grid-column-start: 2;
 
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
         color: white;
         font-size: var(--font-large);
@@ -953,11 +984,15 @@
         justify-content: center;
         align-items: center;
 
-        font-family: Pusab;
+        font-family: Pusab, Helvetica, sans-serif;
         color: white;
         font-size: var(--font-medium);
         -webkit-text-stroke: 1.5px black;
         justify-self: end;
+    }
+
+    .blending_toggle:disabled {
+        opacity: 0.3;
     }
 
     .opacity_slider_container {
@@ -969,6 +1004,10 @@
         align-items: center;
         gap: 8px;
         flex-direction: column;
+    }
+
+    .opacity_slider:disabled {
+        opacity: 0.3;
     }
 
     .opacity_slider {
