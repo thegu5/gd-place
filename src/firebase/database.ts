@@ -67,16 +67,17 @@ export const deleteObjectFromLevel = (objName: string, chunkName: string) => {
 }
 
 export class ChunkNode extends PIXI.Container {
-    public unload = null
     public load = null
+    unsub1 = null
+    unsub2 = null
 
     public addObject = null
     public removeObject = null
 
     public lastTimeVisible: number = 0
     public loaded: boolean = false
-
     //marker: PIXI.Graphics = null
+    public selectableChunk: PIXI.Container = null
 
     constructor(
         x: number,
@@ -101,9 +102,9 @@ export class ChunkNode extends PIXI.Container {
 
         // this.addChild(this.marker)
 
-        let selectableChunk = new PIXI.Container()
-        selectableChunk.name = chunkName
-        selectableWorldNode.addChild(selectableChunk)
+        this.selectableChunk = new PIXI.Container()
+        this.selectableChunk.name = chunkName
+        selectableWorldNode.addChild(this.selectableChunk)
 
         this.addObject = (snapshot) => {
             let obj = GDObject.fromDatabaseString(snapshot.val())
@@ -124,7 +125,7 @@ export class ChunkNode extends PIXI.Container {
             selectableSprite.height = 40 * objectNode.scale.y
             selectableSprite.parentGroup = selectableLayerGroup
 
-            selectableChunk.addChild(selectableSprite)
+            this.selectableChunk.addChild(selectableSprite)
 
             selectableSprite.interactive = true
 
@@ -152,7 +153,7 @@ export class ChunkNode extends PIXI.Container {
                             height + 10
                         )
 
-                    console.log(select_box, width, height)
+                    //console.log(select_box, width, height)
 
                     objectNode.addChild(select_box)
 
@@ -165,35 +166,53 @@ export class ChunkNode extends PIXI.Container {
         }
 
         this.removeObject = (snapshot) => {
+            console.log(this.name, "removed object")
             if (
                 editorNode.selectedObjectChunk == chunkName &&
                 editorNode.selectedObjectNode.name == snapshot.key
             ) {
                 editorNode.deselectObject()
             }
-            this.getChildByName(snapshot.key).destroy()
-            selectableChunk.getChildByName(snapshot.key).destroy()
+            //console.log(this.getChildByName(snapshot.key)) // this.getChildByName(snapshot.key).destroy()
+            this.destroyObject(snapshot.key)
         }
 
         this.load = () => {
-            const unsub1 = onChildAdded(
-                ref(database, `chunks/${chunkName}`),
-                this.addObject
-            )
-            const unsub2 = onChildRemoved(
-                ref(database, `chunks/${chunkName}`),
-                this.removeObject
-            )
-
-            this.loaded = true
-            //this.marker.tint = 0x00ff00
-
-            this.unload = () => {
-                unsub1()
-                unsub2()
-                this.loaded = false
-                //this.marker.tint = 0xff0000
+            if (this.children.length > 0) {
+                this.children.forEach((child) => {
+                    child.destroy()
+                })
             }
+            if (!this.loaded) {
+                this.unsub1 = onChildAdded(
+                    ref(database, `chunks/${chunkName}`),
+                    this.addObject
+                )
+                this.unsub2 = onChildRemoved(
+                    ref(database, `chunks/${chunkName}`),
+                    this.removeObject
+                )
+
+                this.loaded = true
+                //this.marker.tint = 0x00ff00
+            }
+        }
+    }
+
+    destroyObject(key) {
+        this.getChildByName(key).destroy()
+        this.selectableChunk.getChildByName(key).destroy()
+    }
+
+    unload() {
+        if (this.loaded) {
+            this.children.forEach((child) => {
+                child.destroy()
+            })
+            this.unsub1()
+            this.unsub2()
+            this.loaded = false
+            //this.marker.tint = 0xff0000
         }
     }
 }

@@ -17,6 +17,7 @@ import {
     EmailAuthCredential,
     EmailAuthProvider,
     type AuthProvider,
+    TwitterAuthProvider,
 } from "firebase/auth"
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
@@ -27,6 +28,7 @@ import { auth, database, initUserWithUsername } from "./init"
 
 let googleProvider = new GoogleAuthProvider()
 let githubProvider = new GithubAuthProvider()
+let twitterProvider = new TwitterAuthProvider()
 
 export type UserData = {
     user: User
@@ -45,6 +47,7 @@ export const currentUserData: Writable<UserData | null | string> =
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
+export const signInTwitter = () => signInWithPopup(auth, twitterProvider)
 export const signInGD = (token) => signInWithCustomToken(auth, token)
 
 export const signOut = () => logOut(auth)

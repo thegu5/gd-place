@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions"
-import { getAuth } from "firebase-admin/auth"
 import { getDatabase } from "firebase-admin/database"
+import { getAuth } from "firebase-admin/auth"
 
 import fetch from "node-fetch"
 import * as crypto from "crypto"
@@ -224,12 +224,10 @@ export const verifyCode = functions.https.onCall(async (data, request) => {
 
     if (user.code != data.code) {
         throw new functions.https.HttpsError(
-            "permission-denied",
+            "invalid-argument",
             ERRORS.INVALID_CODE
         )
     }
-
-    user_ref.remove()
 
     let token = await getAuth().createCustomToken(uuidv4(), {
         gdUid: user.uid,

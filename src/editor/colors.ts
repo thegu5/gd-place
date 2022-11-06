@@ -1,41 +1,88 @@
 import { clamp } from "../utils/math"
+import { x_to_time } from "./app"
 
-export const COLOR_CHANGES = [
-    { bg: [0.0, 0.0, 0.0], ground: [0.1, 0.1, 0.1], time: 0, fade: 0.0 },
-    { bg: hexToRgb("291663"), ground: hexToRgb("1B0E41"), time: 0, fade: 0.5 },
+let BG_CHANGES = [
+    { fade: 0, x: 1, color: [0, 0, 0] },
+    { fade: 3, x: 61, color: [0, 21, 33] },
+    { fade: 1, x: 1411, color: [0, 0, 0] },
+    { fade: 0.1, x: 1831, color: [143, 22, 43] },
+    { fade: 2, x: 2041, color: [0, 0, 0] },
+    { fade: 0.1, x: 2281, color: [131, 54, 147] },
+    { fade: 2, x: 2491, color: [0, 0, 0] },
+    { fade: 0.1, x: 2761, color: [41, 111, 77] },
+    { fade: 2, x: 2971, color: [0, 0, 0] },
+    { fade: 0.1, x: 3211, color: [41, 111, 77] },
+    { fade: 2, x: 3421, color: [0, 0, 0] },
+    { fade: 0.3, x: 4561, color: [15, 80, 45] },
+    { fade: 3, x: 5565, color: [0, 0, 0] },
+    { fade: 0.3, x: 6421, color: [60, 29, 9] },
+    { fade: 3, x: 7425, color: [0, 0, 0] },
+    { fade: 0.3, x: 8251, color: [83, 22, 52] },
+    { fade: 3, x: 9255, color: [0, 0, 0] },
+    { fade: 0.3, x: 10111, color: [80, 3, 0] },
+    { fade: 3, x: 11115, color: [0, 0, 0] },
+    { fade: 1, x: 15697, color: [14, 24, 41] },
+]
+let GROUND_CHANGES = [
+    { fade: 0, x: 1, color: [7, 7, 7] },
+    { fade: 3, x: 61, color: [15, 35, 47] },
+    { fade: 1, x: 1411, color: [7, 7, 7] },
+    { fade: 0.1, x: 1831, color: [93, 21, 25] },
+    { fade: 2, x: 2041, color: [7, 7, 7] },
+    { fade: 0.1, x: 2281, color: [101, 42, 108] },
+    { fade: 2, x: 2491, color: [7, 7, 7] },
+    { fade: 0.1, x: 2761, color: [63, 163, 113] },
+    { fade: 2, x: 2971, color: [7, 7, 7] },
+    { fade: 0.1, x: 3211, color: [63, 163, 113] },
+    { fade: 2, x: 3421, color: [7, 7, 7] },
+    { fade: 0.2, x: 4351, color: [165, 0, 0] },
+    { fade: 0.3, x: 4561, color: [0, 165, 51] },
+    { fade: 3, x: 5565, color: [7, 7, 7] },
+    { fade: 0.3, x: 6421, color: [165, 96, 0] },
+    { fade: 3, x: 7425, color: [7, 7, 7] },
+    { fade: 0.3, x: 8251, color: [151, 33, 110] },
+    { fade: 3, x: 9255, color: [7, 7, 7] },
+    { fade: 0.3, x: 10111, color: [146, 0, 5] },
+    { fade: 3, x: 11115, color: [7, 7, 7] },
+    { fade: 3, x: 15697, color: [17, 21, 31] },
 ]
 
-export function getColors(time: number) {
-    let bg = [0, 0, 0]
-    let ground = [0, 0, 0]
-    for (let i = 0; i <= COLOR_CHANGES.length; i++) {
-        const colorChange = COLOR_CHANGES[i]
-        const nextTime = COLOR_CHANGES[i + 1]?.time ?? Infinity
+// sort by x
+BG_CHANGES.sort((a, b) => a.x - b.x)
+GROUND_CHANGES.sort((a, b) => a.x - b.x)
+
+function getColor(time: number, changes: any) {
+    let color = [0, 0, 0]
+    for (let i = 0; i <= changes.length; i++) {
+        const colorChange = changes[i]
+        const nextTime = x_to_time(changes[i + 1]?.x ?? Infinity)
 
         let current_time = Math.min(time, nextTime)
 
         let blend
         if (colorChange.fade === 0) blend = 1
-        else blend = (current_time - colorChange.time) / colorChange.fade
+        else
+            blend = (current_time - x_to_time(colorChange.x)) / colorChange.fade
         blend = clamp(blend, 0, 1)
 
-        bg = [
-            bg[0] * (1 - blend) + colorChange.bg[0] * blend,
-            bg[1] * (1 - blend) + colorChange.bg[1] * blend,
-            bg[2] * (1 - blend) + colorChange.bg[2] * blend,
-        ]
-
-        ground = [
-            ground[0] * (1 - blend) + colorChange.ground[0] * blend,
-            ground[1] * (1 - blend) + colorChange.ground[1] * blend,
-            ground[2] * (1 - blend) + colorChange.ground[2] * blend,
+        color = [
+            color[0] * (1 - blend) + colorChange.color[0] * blend,
+            color[1] * (1 - blend) + colorChange.color[1] * blend,
+            color[2] * (1 - blend) + colorChange.color[2] * blend,
         ]
         if (time < nextTime) break
     }
 
-    //console.log(index)
+    return [color[0] / 255, color[1] / 255, color[2] / 255]
+}
 
-    return { bg, ground }
+export function getColors(time: number) {
+    const a = {
+        bg: getColor(time, BG_CHANGES),
+        ground: getColor(time, GROUND_CHANGES),
+    }
+
+    return a
 }
 
 function hexToRgb(hex: string) {

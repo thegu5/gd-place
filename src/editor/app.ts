@@ -10,7 +10,7 @@ import { getColors } from "./colors"
 
 export const DRAGGING_THRESHOLD = 40.0
 
-function x_to_time(x) {
+export function x_to_time(x) {
     // blocks per second in 1x speed
     return x / 30 / 10.3761348898
 }

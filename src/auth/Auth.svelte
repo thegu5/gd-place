@@ -6,6 +6,7 @@
         signInGD,
         signInGithub,
         signInGoogle,
+        signInTwitter,
         signOut,
         type UserData,
     } from "../firebase/auth"
@@ -15,25 +16,26 @@
 
     export let loadedUserData: UserData | null
 
+    const logInSuccess = () => {
+        loginPopupVisible = false
+        buttonsDisabled = false
+
+        toast.push("Login Successful!", toastSuccessTheme)
+    }
+    const logInFailed = (err) => {
+        console.error(err)
+        buttonsDisabled = false
+
+        toast.push("Failed to login!", toastErrorTheme)
+    }
+
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
             cb: () => {
                 buttonsDisabled = true
-                signInGoogle()
-                    .then(() => {
-                        loginPopupVisible = false
-                        buttonsDisabled = false
-
-                        toast.push("Login Successful!", toastSuccessTheme)
-                    })
-                    .catch((err) => {
-                        console.error(err)
-                        buttonsDisabled = false
-
-                        toast.push("Failed to login!", toastErrorTheme)
-                    })
+                signInGoogle().then(logInSuccess).catch(logInFailed)
             },
         },
         {
@@ -41,27 +43,19 @@
             name: "GitHub",
             cb: () => {
                 buttonsDisabled = true
-                signInGithub()
-                    .then(() => {
-                        loginPopupVisible = false
-                        buttonsDisabled = false
-
-                        toast.push("Login Successful!", toastSuccessTheme)
-                    })
-                    .catch((err) => {
-                        console.error(err)
-                        buttonsDisabled = false
-
-                        toast.push("Failed to login!", toastErrorTheme)
-                    })
+                signInGithub().then(logInSuccess).catch(logInFailed)
             },
         },
         {
+            disabled: true,
             image: "twitter.svg",
             name: "Twitter",
-            cb: () => {},
+            cb: () => {
+                signInTwitter().then(logInSuccess).catch(logInFailed)
+            },
         },
         {
+            disabled: true,
             image: "gd.png",
             name: "GD",
             cb: () => {
@@ -143,20 +137,30 @@
                 <img draggable="false" src="login/back.svg" alt="back arrow" />
             </button>
             <div class="login_popup blur_bg">
-                {#each loginButtons as button}
-                    <button
-                        disabled={buttonsDisabled}
-                        class="login_method_button invis_button"
-                        on:click={button.cb}
-                    >
-                        <img
-                            draggable="false"
-                            src="login/{button.image}"
-                            alt="login provider"
-                        />
-                        Login with {button.name}
-                    </button>
-                {/each}
+                <div class="login_popup_title">Login/Register</div>
+                <div class="login_text">
+                    Login/register with one of the following services (Twitter
+                    and Geometry Dash will be implemented at a later time).
+                    After logging in, you will be able to make a username. We
+                    will not be able to access any of your data, this is just
+                    for authentication.
+                </div>
+                <div class="login_popup_icons">
+                    {#each loginButtons as button}
+                        <button
+                            disabled={buttonsDisabled || button?.disabled}
+                            class="login_method_button invis_button"
+                            on:click={button.cb}
+                        >
+                            <img
+                                draggable="false"
+                                src="login/{button.image}"
+                                alt="login provider"
+                            />
+                            Login with {button.name}
+                        </button>
+                    {/each}
+                </div>
             </div>
         </div>
     {/if}
@@ -175,7 +179,6 @@
                         style:opacity={validUsername ? "1" : "0.25"}
                         class="checkmark_button invis_button wiggle_button"
                         on:click={() => {
-                            buttonsDisabled = true
                             initUserData(loadedUserData.user.uid, usernameInput)
                         }}
                     >
@@ -362,11 +365,33 @@
         background-color: #1113;
         backdrop-filter: blur(16px);
     }
+    .login_popup_title {
+        font-family: "Cabin", sans-serif;
+        font-size: var(--font-large);
+        color: white;
+        margin-bottom: 32px;
+        margin-top: 16px;
+    }
+    .login_text {
+        font-family: "Cabin", sans-serif;
+        font-size: 16px;
+        width: 80%;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 12px;
+    }
     .login_popup {
         position: absolute;
-        width: min(400px, 90%);
-        height: min(400px, 90%);
+        width: min(600px, 90%);
+        height: min(800px, 90%);
         border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .login_popup_icons {
+        width: 100%;
+        height: 100%;
         display: grid;
         grid-template-rows: 1fr 1fr;
         grid-template-columns: 1fr 1fr;
