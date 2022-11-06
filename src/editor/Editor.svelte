@@ -34,6 +34,7 @@
         if (currentMenu == EditorMenu.Delete) {
             pixiApp.editorNode.removePreview()
             pixiApp.editorNode.setObjectsSelectable(true)
+            pixiApp.editorNode.tooltip.visible = false
         } else {
             pixiApp.editorNode.setObjectsSelectable(false)
             pixiApp.editorNode.deselectObject()
@@ -93,10 +94,13 @@
             }
         }
     })
+
+    let fartcock = []
 </script>
 
 <svelte:window
     on:pointerup={(e) => {
+        console.log("z", fartcock.includes(e))
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
@@ -154,6 +158,8 @@
         class="pixi_canvas"
         bind:this={pixiCanvas}
         on:pointerdown={(e) => {
+            console.log("a", e.pointerId)
+            fartcock.push(e)
             pixiApp.draggingThresholdReached = false
             pixiApp.dragging = {
                 prevCamera: pixiApp.editorNode.cameraPos.clone(),
@@ -184,26 +190,6 @@
                 pixiApp.editorNode.cameraPos.y -= e.deltaY
                 pixiApp.editorNode.cameraPos.x += e.deltaX
             }
-
-            // set editor position to local storage
-            storePosState(pixiApp)
-        }}
-        on:pinch={(e) => {
-            e.preventDefault()
-            let wm = pixiApp.editorNode.toWorld(
-                vec(e.detail.center.x, e.detail.center.y),
-                pixiApp.canvasSize()
-            )
-            let prevZoom = pixiApp.editorNode.zoom()
-            pixiApp.editorNode.zoomLevel += e.detail.scale
-            pixiApp.editorNode.zoomLevel = Math.min(
-                MIN_ZOOM,
-                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
-            )
-            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-            pixiApp.editorNode.cameraPos = wm.plus(
-                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-            )
 
             // set editor position to local storage
             storePosState(pixiApp)

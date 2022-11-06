@@ -492,7 +492,7 @@ export class ObjectNode extends PIXI.Container {
 }
 
 class TooltipNode extends PIXI.Graphics {
-    text: PIXI.Text
+    placedBy: PIXI.Text
     nameText: PIXI.Text
     public zoom: number = 1
 
@@ -501,31 +501,24 @@ class TooltipNode extends PIXI.Graphics {
     constructor() {
         super()
 
-        this.text = new PIXI.Text("Placed By:", {
+        this.placedBy = new PIXI.Text("Placed By:", {
             fontFamily: "Cabin",
-            fontSize: 12,
             fill: [0xffffff88],
-            align: "left",
         })
 
-        this.text.anchor.set(0, 0.5)
-        this.text.transform.scale.set(0.8)
+        //this.text.anchor.set(0, 0.5)
+        //this.text.transform.scale.set(0.8)
 
         this.nameText = new PIXI.Text("", {
             fontFamily: "Cabin",
-            fontSize: 12,
             fill: [0xffffff],
-            align: "left",
         })
 
-        this.nameText.anchor.set(0, 0.5)
+        //this.nameText.anchor.set(0, 0.5)
 
-        this.text.y = -this.height / 2
-        this.nameText.y = -this.height / 2
-
-        this.text.resolution = 6
+        this.placedBy.resolution = 6
         this.nameText.resolution = 6
-        this.addChild(this.text)
+        this.addChild(this.placedBy)
         this.addChild(this.nameText)
 
         this.scale.y *= -1
@@ -544,7 +537,7 @@ class TooltipNode extends PIXI.Graphics {
 
         const size = Math.min(Math.max(MIN_ZOOM - this.zoom, 6), 20)
 
-        this.text.style.fontSize = size
+        this.placedBy.style.fontSize = size * 0.8
         this.nameText.style.fontSize = size
 
         if (this.currentObject != null)
@@ -565,6 +558,10 @@ class TooltipNode extends PIXI.Graphics {
 
         get(ref(database, `userPlaced/${on.name}`))
             .then(async (username) => {
+                this.clear()
+
+                this.nameText.text = username.val()
+
                 // check for color
                 let colorSnap = await get(
                     ref(
@@ -582,25 +579,24 @@ class TooltipNode extends PIXI.Graphics {
                         .split(" ")
                         .map((a) => parseInt(a, 16))
                 }
-                console.log(color)
 
-                this.nameText.text = username.val()
                 this.nameText.style.fill = color
 
-                this.clear()
-
-                this.nameText.x = this.text.width + padding
-
                 this.beginFill(0x000000, 0.7)
+
                 this.drawRoundedRect(
-                    this.text.x - padding / 2,
-                    this.text.y + this.height / 2 - padding / 2,
-                    this.text.width + padding + this.nameText.width + padding,
-                    Math.max(this.text.height, this.nameText.height) + padding,
+                    this.placedBy.x + this.nameText.x - padding / 2,
+                    this.nameText.y,
+                    this.placedBy.width +
+                        padding +
+                        this.nameText.width +
+                        padding,
+                    Math.max(this.placedBy.height, this.nameText.height) +
+                        padding,
                     5
                 )
 
-                this.x = on.x - (this.text.width + this.nameText.width) / 2
+                this.x = on.x - this.width / 2
                 this.y = on.y - (this.height - padding * 2)
 
                 this.endFill()
